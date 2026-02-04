@@ -1,0 +1,10 @@
++-------------------+-----------------------+------------------+------------------+-----------------------+---------------------+
+| Scenario Name     | Network Trust         | Device Trust     | Data Sensitivity | Typical Decision      | Description         |
++-------------------+-----------------------+------------------+------------------+-----------------------+---------------------+
+| Corporate Office  | High (0.95)           | High (0.95)      | High (0.90)      | Full Access           | Empoyee on-site     |
+| VPN / Remote      | Medium-High (0.85)    | High (0.95)      | High (0.90)      | Full/Limited Access   | WFH with managed PC |
+| Public Wi-Fi      | Low (0.30)            | High (0.95)      | Medium (0.70)    | Limited Access        | Coffee shop usage   |
+| BYOD / Guest      | High (0.90)           | Low (0.40)       | Low (0.50)       | Limited Access        | Personal phone      |
+| Untrusted         | Low (0.20)            | Low (0.20)       | High (0.90)      | No Access             | Unknown external    |
+| Compromised       | Very Low (0.10)       | Medium (0.60)    | Medium (0.70)    | No Access             | Detected attack     |
++-------------------+-----------------------+------------------+------------------+-----------------------+---------------------+
