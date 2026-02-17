@@ -29,7 +29,7 @@ def get_access_decision(belief_safe):
         return "No Access"
 
 def main():
-    print("Running Weighted Belief Fusion Simulation with Temporal Decay (30 Step Session)...")
+    print("Running Weighted Belief Fusion Simulation with Exponential Temporal Decay (30 Step Session)...")
     # Using 'corporate_office' to show how even a high trust scenario decays
     sim = TrustSimulator(scenario='corporate_office', session_duration=30)
     

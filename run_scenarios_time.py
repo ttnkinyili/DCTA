@@ -188,7 +188,7 @@ def main():
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
 
-    print("Running all scenarios with Time Decay...")
+    print("Running all scenarios with Exponential Time Decay...")
     all_results = []
     
     for scenario in SCENARIOS:

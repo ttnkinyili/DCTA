@@ -1,6 +1,7 @@
 import random
 import time
 import json
+import math
 
 class TrustSimulator:
     def __init__(self, scenario='default', session_duration=30):
@@ -179,18 +180,24 @@ class TrustSimulator:
 
     def get_temporal_decay_factor(self):
         """
-        Calculates a multiplier (0.0 - 1.0) based on time remaining in session.
-        Decay begins to accelerate as it approaches the limit.
+        Calculates a multiplier (0.0 - 1.0) based on time using Exponential Decay.
+        Formula: Decay = e^(-lambda * t)
+        
+        We calibrate lambda such that at t = session_duration, the value is effectively 0 (e.g., 0.05).
+        Let target at duration be 0.05:
+            0.05 = e^(-k) => k ~= 3.0
+            So, exponent = -3.0 * (t / duration)
         """
         if self.time_step >= self.session_duration:
-            return 0.0
-        
-        # Linear Decay for simplicity and transparency
-        # At step 0: 1.0
-        # At step 15: 0.5
-        # At step 30: 0.0
-        decay = 1.0 - (float(self.time_step) / float(self.session_duration))
-        return max(0.0, decay)
+            return 0.05 # Asymptote but effectively expired
+            
+        # Exponential Decay
+        # t=0 -> 1.0
+        # t=15 -> e^-1.5 ~= 0.22
+        # t=30 -> e^-3.0 ~= 0.05
+        ratio = float(self.time_step) / float(self.session_duration)
+        decay = math.exp(-3.0 * ratio)
+        return decay
 
     def get_normalized_domain_weights(self):
         """
