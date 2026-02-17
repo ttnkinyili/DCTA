@@ -1,0 +1,57 @@
+SAMPLE SIMULATION OUTPUTS (TIME DECAYED)
+================================================================================
+
+SCENARIO: corporate_office
+----------------------------------------
+ Step  Network_Score  Data_Score  Device_Score  App_Risk_Posture  Decay_Factor  Trust_Score       Decision
+    0       0.969026    0.899069      0.952109          0.900904      0.966667     0.770555    Full Access
+   15       0.963604    0.922752      0.945190          0.909878      0.466667     0.466659 Limited Access
+   29       0.967070    0.891072      0.941485          0.869666      0.000000     0.000000      No Access
+
+================================================================================
+
+SCENARIO: remote_vpn
+----------------------------------------
+ Step  Network_Score  Data_Score  Device_Score  App_Risk_Posture  Decay_Factor  Trust_Score       Decision
+    0       0.834990    0.915470      0.960597          0.904669      0.966667     0.755939    Full Access
+   15       0.845339    0.914298      0.957124          0.890226      0.466667     0.466653 Limited Access
+   29       0.830224    0.922844      0.970340          0.899760      0.000000     0.000000      No Access
+
+================================================================================
+
+SCENARIO: public_wifi
+----------------------------------------
+ Step  Network_Score  Data_Score  Device_Score  App_Risk_Posture  Decay_Factor  Trust_Score       Decision
+    0       0.339300    0.659226      0.694663          0.696479      0.966667     0.554688 Limited Access
+   15       0.101402    0.552843      0.801674          0.725866      0.466667     0.448607      No Access
+   29       0.459676    0.567012      0.766285          0.702419      0.000000     0.000000      No Access
+
+================================================================================
+
+SCENARIO: byod
+----------------------------------------
+ Step  Network_Score  Data_Score  Device_Score  App_Risk_Posture  Decay_Factor  Trust_Score       Decision
+    0       0.869381    0.432132      0.396787          0.634197      0.966667     0.544535 Limited Access
+   15       0.899989    0.442593      0.375242          0.533282      0.466667     0.435707      No Access
+   29       0.882684    0.455291      0.461007          0.581059      0.000000     0.000000      No Access
+
+================================================================================
+
+SCENARIO: compromised
+----------------------------------------
+ Step  Network_Score  Data_Score  Device_Score  App_Risk_Posture  Decay_Factor  Trust_Score  Decision
+    0       0.122536    0.202249      0.258694          0.123645      0.966667     0.258594 No Access
+   15       0.319731    0.175719      0.221308          0.297722      0.466667     0.000224 No Access
+   29       0.401734    0.225170      0.049248          0.254862      0.000000     0.000000 No Access
+
+================================================================================
+
+SCENARIO: untrusted_device_geofence
+----------------------------------------
+ Step  Network_Score  Data_Score  Device_Score  App_Risk_Posture  Decay_Factor  Trust_Score  Decision
+    0       0.376441    0.257576      0.367587          0.291838      0.966667     0.355684 No Access
+   15       0.365221    0.334154      0.242555          0.390145      0.466667     0.003746 No Access
+   29       0.346324    0.309108      0.463198          0.255615      0.000000     0.000000 No Access
+
+================================================================================
+
