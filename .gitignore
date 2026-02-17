@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+scenarios_table.png
+scenario_trust_analysis.png

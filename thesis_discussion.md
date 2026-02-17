@@ -48,15 +48,19 @@ Where $W_d$ is the weight of domain $d$, and $\sigma^2$ is the variance of the t
 
 ## 4. Scenario Analysis & Decision Boundaries
 
-We evaluated the model against six canonical scenarios. The Fusion Engine output determines the decision based on thresholds: Full Access ($Bel( Safe) \ge 0.75$), Limited ($Bel(Safe) \ge 0.45$), Deny ($< 0.45$).
+We evaluated the model against six canonical scenarios. The Fusion Engine output determines the decision based on the **Trust Score** ($BetP(\text{Safe})$):
+*   **Full Access**: $> 0.75$
+*   **Limited Access**: $\ge 0.45$ and $\le 0.75$
+*   **No Access**: $< 0.45$
 
 | Scenario | Characteristics | Fusion Outcome | Discussion |
 | :--- | :--- | :--- | :--- |
-| **Corporate Office** | High scores across all domains. | **Full Access** | The "Happy Path". Convergence is rapid. |
-| **Remote / VPN** | Network trust dips slightly (VPN is secure but over public internet). Device is high. | **Full Access** | Fusion robustness allows the high Device/Data trust to compensate for minor Network variance. |
-| **Public Wi-Fi** | Network trust crashes (0.30). | **Limited Access** | The drop in Network trust adds significant *Uncertainty*. Typically results in Limited access unless Data sensitivity is very low. |
-| **Untrusted Device / BYOD** | Device score is low (0.30 - 0.40). Network may be high (Geofenced). | **Limited/Full** | *Key Insight*: Our simulation showed that a High Network + High App can sometimes "carry" a low-trust device if the Data is not critical. However, for sensitive Data, the math prevents Full Access. |
-| **Compromised** | Multiple domains show low scores or high variance. | **No Access** | The accumulation of evidence for "Unsafe" ($m(\text{Unsafe})$) dominates. |
+| **Corporate Office** | High scores across all domains. | **Full Access** | Trust Score converges to $\approx 1.0$. |
+| **Remote / VPN** | Network trust dips slightly. | **Full Access** | Strong Device/App/Data signals maintain Trust Score $> 0.95$. |
+| **Public Wi-Fi** | Network trust fluctuates (0.02 - 0.40). | **Limited $\rightarrow$ Full** | System starts cautious (Limited) due to volatility, but good endpoint health builds trust over time. |
+| **Untrusted Device / BYOD** | Device score is low (0.40). | **Limited $\rightarrow$ Full** | High Network/App trust eventually compensates for the unmanaged device for non-critical data. |
+| **Compromised** | All domains failing (< 0.30). | **No Access** | System correctly identifies systemic failure. $BetP(\text{Safe}) < 0.10$. |
+| **Untrusted Device** | Low trust parameters across domains. | **No Access** | Strict policy simulation prevents access ($BetP(\text{Safe}) \approx 0.14$). |
 
 ## 5. Conclusion
 The integration of Dynamic Contextual Weighting with Dempster-Shafer belief fusion provides a superior mechanism for Zero Trust Access Control compared to static Boolean logic. By mathematically distinguishing between "Known Bad" (Low Score, High Weight) and "Unknown/Unstable" (High Variance, Low Weight), the system achieves a nuanced "Gray Area" decision capability—essential for modern, heterogeneous network environments.

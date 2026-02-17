@@ -6,101 +6,218 @@ class TrustSimulator:
     def __init__(self, scenario='default'):
         self.domains = ['Network', 'Data', 'Device', 'App']
         
-        if scenario == 'untrusted_device_geofence':
-            # Scenario: Remote User, Geofenced Network (High), Untrusted Device (Low), Authorized Data (High)
-            self.trust_scores = {
-                'Network': 0.95, # Geofenced
-                'Data': 0.90,    # Authorized
-                'Device': 0.30,  # Untrusted
-                'App': 0.85      # Standard
-            }
-            self.variance = {
-                'Network': 0.01, # Stable
-                'Data': 0.05,
-                'Device': 0.20,  # Unstable/Risky
-                'App': 0.05
-            }
+        # Granular Parameters configuration
+        self.parameters = {
+            'Data': ['Integrity', 'Freshness', 'Authenticity'],
+            'Device': ['Identity', 'Reputation', 'Compliance'],
+            'App': ['VulnerabilityScore', 'Consistency', 'AccessCompliance'],
+            'Network': ['Anomalies', 'ProtocolScore', 'NodeReputation']
+        }
+        
+        # Parameter Weights (Static for this simulation, but could be dynamic)
+        # Sum should be 1.0 per domain for Weighted Sum
+        self.param_weights = {
+            'Data': {'Integrity': 0.4, 'Freshness': 0.2, 'Authenticity': 0.4},
+            'Device': {'Identity': 0.3, 'Reputation': 0.3, 'Compliance': 0.4},
+            'App': {'VulnerabilityScore': 0.4, 'Consistency': 0.3, 'AccessCompliance': 0.3},
+            'Network': {'Anomalies': 0.4, 'ProtocolScore': 0.3, 'NodeReputation': 0.3}
+        }
+
+        # Initialize base scores and variances for parameters
+        self.param_scores = {}
+        self.param_variance = {}
+
+        # Initialize base scores and variances based on scenario
+        if scenario == 'corporate_office':
+            # High Trust Everywhere
+            self._set_domain_params('Network', 0.95, 0.01) # Stable, Secure
+            self._set_domain_params('Data', 0.90, 0.02)
+            self._set_domain_params('Device', 0.95, 0.01) # Managed
+            self._set_domain_params('App', 0.90, 0.02)
+            
+        elif scenario == 'remote_vpn':
+            # Good Device, Secure Path, but remote
+            self._set_domain_params('Network', 0.85, 0.05) # VPN is good, but public, slightly more variance
+            self._set_domain_params('Data', 0.90, 0.02)
+            self._set_domain_params('Device', 0.95, 0.01) # Managed
+            self._set_domain_params('App', 0.90, 0.02)
+
+        elif scenario == 'public_wifi':
+            # 3. Public Wi-Fi: Low to Medium Trust (Risky Network)
+            self._set_domain_params('Network', 0.30, 0.25) # Low
+            self._set_domain_params('Data', 0.60, 0.05)    # Medium
+            self._set_domain_params('Device', 0.75, 0.05)  # Med-High (Managed but risky environment)
+            self._set_domain_params('App', 0.70, 0.05)     # Medium
+
+        elif scenario == 'byod': 
+            # 4. BYOD: Low to Medium Trust (Unmanaged Device)
+            self._set_domain_params('Network', 0.90, 0.02) # High (Internal)
+            self._set_domain_params('Data', 0.50, 0.05)    # Low/Med
+            self._set_domain_params('Device', 0.40, 0.20)  # Low
+            self._set_domain_params('App', 0.60, 0.10)     # Medium
+
+        elif scenario == 'compromised':
+            # 6. Compromised: LOW TRUST FOR ALL FACETS
+            self._set_domain_params('Network', 0.20, 0.30) # Very Low
+            self._set_domain_params('Data', 0.20, 0.10)    # Low
+            self._set_domain_params('Device', 0.20, 0.30)  # Low
+            self._set_domain_params('App', 0.20, 0.20)     # Low
+
+        elif scenario == 'untrusted_device_geofence':
+            # 5. Untrusted: LOW TRUST FOR ALL FACETS
+            self._set_domain_params('Network', 0.30, 0.10) # Low
+            self._set_domain_params('Data', 0.30, 0.05)    # Low
+            self._set_domain_params('Device', 0.30, 0.20)  # Low
+            self._set_domain_params('App', 0.30, 0.10)     # Low
+            
         else:
-            # Default Baseline
-            self.trust_scores = {
-                'Network': 0.9,
-                'Data': 0.85,
-                'Device': 0.95,
-                'App': 0.8
-            }
-            self.variance = {
-                'Network': 0.05,
-                'Data': 0.1,
-                'Device': 0.02,
-                'App': 0.15
-            }
+            # Default / Fallback
+            self._set_domain_params('Network', 0.5, 0.1)
+            self._set_domain_params('Data', 0.5, 0.1)
+            self._set_domain_params('Device', 0.5, 0.1)
+            self._set_domain_params('App', 0.5, 0.1)
             
         self.scenario = scenario
         self.time_step = 0
+        
+        # History tracking for dynamic variance calculation
+        # Structure: self.history[domain][param] = [val1, val2, ...]
+        self.history = {d: {p: [] for p in self.parameters[d]} for d in self.domains}
+        
+        # Aggregated Domain Score History (for inter-domain weighting)
+        self.domain_score_history = {d: [] for d in self.domains}
+
+    def _set_domain_params(self, domain, base_score, base_variance):
+        """Helper to initialize parameters for a domain around a base score"""
+        self.param_scores[domain] = {}
+        self.param_variance[domain] = {}
+        for param in self.parameters[domain]:
+            # Add slight random variation to initial parameter scores so they aren't identical
+            variation = random.uniform(-0.05, 0.05)
+            self.param_scores[domain][param] = max(0.0, min(1.0, base_score + variation))
+            self.param_variance[domain][param] = base_variance
 
     def step(self):
-        """Simulate a time step. Trust scores fluctuate."""
+        """Simulate a time step. Parameters fluctuate."""
         self.time_step += 1
         
-        # Scenario: Network attack starts at step 5 ONLY for default
+        # Scenario Logic: Network Attack (only for default scenario for now)
         if self.scenario == 'default' and self.time_step == 5:
-            print(">>> EVENT: Network Attack Simulation Started")
-            self.trust_scores['Network'] = 0.4 # Drops significantly
-            self.variance['Network'] = 0.3     # Becomes unstable
+            print(">>> EVENT: Network Anomalies Detected")
+            self.param_scores['Network']['Anomalies'] = 0.2 # Drastic drop
+            self.param_variance['Network']['Anomalies'] = 0.4 # Chaotic
 
-        # Update scores with random noise
         current_readings = {}
-        for d in self.domains:
-            # Random fluctuation
-            noise = random.gauss(0, self.variance[d])
-            new_score = max(0.0, min(1.0, self.trust_scores[d] + noise))
-            current_readings[d] = new_score
-            
+        
+        for domain in self.domains:
+            current_readings[domain] = {}
+            for param in self.parameters[domain]:
+                # fluctuation
+                var = self.param_variance[domain][param]
+                noise = random.gauss(0, var)
+                current_val = self.param_scores[domain][param]
+                new_val = max(0.0, min(1.0, current_val + noise))
+                
+                current_readings[domain][param] = new_val
+                
+                # Update History
+                self.history[domain][param].append(new_val)
+                if len(self.history[domain][param]) > 10: # Keep window short
+                    self.history[domain][param].pop(0)
+
         return current_readings
 
-    def get_dynamic_weight(self, domain, history):
+    def _calculate_variance(self, data):
+        if len(data) < 2: return 0.0
+        mean = sum(data) / len(data)
+        return sum((x - mean) ** 2 for x in data) / len(data)
+
+    def get_dynamic_param_weights(self, domain):
         """
-        Calculate dynamic weight based on stability (variance) of recent history.
-        High variance -> Low Weight (Unreliable source)
-        Low variance -> High Weight (Reliable source)
+        Calculate intra-domain weights for parameters based on variance.
+        Normalize properties so sum(weights) = 1.0
+        Low Variance = High Weight.
         """
-        if len(history) < 2:
-            return 1.0 # Default weight
+        variances = {}
+        for param in self.parameters[domain]:
+            hist = self.history[domain][param]
+            variances[param] = self._calculate_variance(hist)
+            
+        # Raw Weight = 1 / (1 + scaling * Variance)
+        raw_weights = {p: 1.0 / (1.0 + v * 100) for p, v in variances.items()}
         
-        # Simple variance calculation
-        mean = sum(history) / len(history)
-        var = sum((x - mean) ** 2 for x in history) / len(history)
+        # Normalize
+        total_weight = sum(raw_weights.values())
+        if total_weight == 0:
+            # Fallback to equal weights
+            count = len(self.parameters[domain])
+            return {p: 1.0/count for p in self.parameters[domain]}
+            
+        normalized = {p: w / total_weight for p, w in raw_weights.items()}
+        return normalized
+
+    def calculate_domain_score(self, domain, param_readings):
+        """
+        Stage 1 Fusion: Dynamic Weighted Sum of Parameters (Normalized)
+        """
+        # Get dynamic normalized weights for this step
+        weights = self.get_dynamic_param_weights(domain)
         
-        # Weight formula: 1 / (1 + variance_factor)
-        # Scaled to be sensitive
-        weight = 1.0 / (1.0 + (var * 100)) 
-        return weight
+        score = 0.0
+        for param, value in param_readings.items():
+            score += value * weights[param]
+            
+        # Track for inter-domain calculation
+        self.domain_score_history[domain].append(score)
+        if len(self.domain_score_history[domain]) > 10:
+             self.domain_score_history[domain].pop(0)
+             
+        return score
+
+    def get_normalized_domain_weights(self):
+        """
+        Calculate Inter-domain weights.
+        Based on variance of the AGGREGATED domain scores.
+        Normalized so sum(weights across all domains) = 1.0
+        """
+        variances = {}
+        for domain in self.domains:
+            hist = self.domain_score_history[domain]
+            variances[domain] = self._calculate_variance(hist)
+            
+        # Raw Weight
+        raw_weights = {d: 1.0 / (1.0 + v * 100) for d, v in variances.items()}
+        
+        # Normalize
+        total = sum(raw_weights.values())
+        if total == 0:
+             return {d: 0.25 for d in self.domains}
+             
+        normalized = {d: w / total for d, w in raw_weights.items()}
+        return normalized
 
 def main():
-    print("Running Scenario: Remote User, Untrusted Device, Geofenced Network")
+    print("Running Granular Trust Simulation (Normalized Weights)...")
     sim = TrustSimulator(scenario='untrusted_device_geofence')
-    history = {d: [] for d in sim.domains}
     
-    print(f"{'Step':<5} | {'Domain':<10} | {'Raw Trust':<10} | {'Weight':<10} | {'Weighted Trust':<15}")
-    print("-" * 65)
+    print(f"{'Step':<5} | {'Domain':<10} | {'Agg Score':<10} | {'Norm Weight':<12}")
+    print("-" * 50)
 
-    for i in range(15): # Run for 15 steps
+    for i in range(15):
         readings = sim.step()
         
+        # Calculate scores first to update history
+        scores = {}
         for d in sim.domains:
-            history[d].append(readings[d])
-            # Keep history short for dynamic responsiveness (e.g., last 5 steps)
-            recent_history = history[d][-5:]
+            scores[d] = sim.calculate_domain_score(d, readings[d])
             
-            weight = sim.get_dynamic_weight(d, recent_history)
-            
-            # Application of weight: 
-            # In direct trust, we might scale the score. 
-            # In Dempster-Shafer later, we will use this to 'discount' the mass.
-            
-            print(f"{i:<5} | {d:<10} | {readings[d]:<10.3f} | {weight:<10.3f} | {readings[d]*weight:<15.3f}")
+        # Get normalized inter-domain weights
+        domain_weights = sim.get_normalized_domain_weights()
         
-        print("-" * 65)
+        for d in sim.domains:
+            print(f"{i:<5} | {d:<10} | {scores[d]:<10.3f} | {domain_weights[d]:<12.3f}")
+        
+        print("-" * 50)
 
 if __name__ == "__main__":
     main()
