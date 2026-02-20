@@ -1,0 +1,58 @@
+SAMPLE ENSEMBLE SIMULATION OUTPUTS
+Model: Inertia (48h Decay) + Fusion (30m Freshness)
+================================================================================
+
+SCENARIO: corporate_office
+----------------------------------------
+ Step  Instant_Trust  Prev_Trust  Inertia_Component  Freshness_Component  Ensemble_Trust    Decision
+    0       0.794587    0.500000           0.000000             0.794587        0.794587 Full Access
+   15       0.798828    0.796127           0.617843             0.178243        0.796086 Full Access
+   29       0.798730    0.792180           0.747812             0.043949        0.791761 Full Access
+
+================================================================================
+
+SCENARIO: remote_vpn
+----------------------------------------
+ Step  Instant_Trust  Prev_Trust  Inertia_Component  Freshness_Component  Ensemble_Trust    Decision
+    0       0.787406    0.500000           0.000000             0.787406        0.787406 Full Access
+   15       0.791865    0.786103           0.610064             0.176689        0.786753 Full Access
+   29       0.788218    0.783121           0.739261             0.043370        0.782631 Full Access
+
+================================================================================
+
+SCENARIO: public_wifi
+----------------------------------------
+ Step  Instant_Trust  Prev_Trust  Inertia_Component  Freshness_Component  Ensemble_Trust       Decision
+    0       0.569511    0.500000           0.000000             0.569511        0.569511 Limited Access
+   15       0.618821    0.602407           0.467505             0.138078        0.605582 Limited Access
+   29       0.620438    0.604042           0.570211             0.034138        0.604349 Limited Access
+
+================================================================================
+
+SCENARIO: byod
+----------------------------------------
+ Step  Instant_Trust  Prev_Trust  Inertia_Component  Freshness_Component  Ensemble_Trust       Decision
+    0       0.558004    0.500000           0.000000             0.558004        0.558004 Limited Access
+   15       0.587842    0.613747           0.476305             0.131165        0.607470 Limited Access
+   29       0.580594    0.600576           0.566939             0.031946        0.598885 Limited Access
+
+================================================================================
+
+SCENARIO: compromised
+----------------------------------------
+ Step  Instant_Trust  Prev_Trust  Inertia_Component  Freshness_Component  Ensemble_Trust  Decision
+    0       0.226935    0.500000           0.000000             0.226935        0.226935 No Access
+   15       0.349937    0.288259           0.223706             0.078081        0.301788 No Access
+   29       0.351770    0.296184           0.279596             0.019356        0.298951 No Access
+
+================================================================================
+
+SCENARIO: untrusted_device_geofence
+----------------------------------------
+ Step  Instant_Trust  Prev_Trust  Inertia_Component  Freshness_Component  Ensemble_Trust  Decision
+    0       0.359664    0.500000           0.000000             0.359664        0.359664 No Access
+   15       0.371200    0.335191           0.260129             0.082826        0.342955 No Access
+   29       0.339773    0.346931           0.327501             0.018695        0.346196 No Access
+
+================================================================================
+
