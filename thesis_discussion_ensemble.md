@@ -51,6 +51,11 @@ The model implements a dynamic slider between **Signal** and **Memory**, governe
     Where $\lambda$ is calibrated such that $D_{long}(48h) \approx 0.05$.
     *   This means "Trust decays to near-zero after 48 hours of silence."
 
+#### Calibrating History vs. Variance with $\alpha$
+In integrating long-term temporal inertia with real-time Dempster-Shafer fusion, the baseline variance sensitivity parameter ($\alpha$) located within the dynamic weighting mechanism ($W_d = \frac{1}{1 + \alpha \cdot \sigma^2}$) regulates how effectively historical stability can be overridden by present instability. 
+*   A stable, 48-hour history accumulates significant mass, functioning as computational momentum. If a device suddenly broadcasts highly variable health signals (significant variance), a large sensitivity index (e.g., **$\alpha \ge 10$**) immediately collapses the signal weight of the current behavior. Therefore, the architecture relies almost entirely on the long-term inertia until an anomalous behavioral trend is sustained over multiple periods.
+*   Following recommendations from reputation degradation architectures (Mui et al., 2002, "A Computational Model of Trust and Reputation"), long-term session evaluation optimally functions with a balanced parameter (**$\alpha = 5.0$**). This configuration prevents the system's historical evaluation from being prematurely disrupted by benign sensor spikes, ensuring the long-term exponential factor ($D_{long}$) primarily governs the context's baseline evaluation.
+
 ## 4. Mathematical Validation (The Ensemble Formula)
 The Weighted Mixture formula ensures stability by combining these two timeframes:
 
@@ -60,5 +65,21 @@ $$ T_{ensemble} = \underbrace{[T_{instant} \cdot W_{short}(t)]}_{\text{Fresh Sig
     *   **Good Employee**: Starts with Full Access. As time passes ($t \rightarrow 30$), the "Need for Fresh Signals" ($W_{short}$) decreases because they have built up "Momentum". Access persists smoothly.
     *   **Attacker**: Starts with No Access. As time passes, the system "Remembers" they are bad. Even if they mimic a safe signal at minute 29, the Inertia ($1 - W_{short} \approx 0.95$) weighs the history of "Bad" so heavily that access remains denied.
 
-## 5. Conclusion
+## 5. Scenario Analysis & Decision Boundaries
+
+We evaluated the ensemble hybrid model against six canonical scenarios to observe how historical inertia impacts security and usability over time. The access thresholds are defined as:
+*   **Full Access**: $> 0.75$
+*   **Limited Access**: $\ge 0.45$ and $\le 0.75$
+*   **No Access**: $< 0.45$
+
+| Scenario | Characteristics | Ensemble Outcome | Discussion |
+| :--- | :--- | :--- | :--- |
+| **Corporate Office** | Consistently high signals over time. | **Stable Full Access** | High fresh signal transitions smoothly into high inertia. Trust score is practically locked at $\approx 1.0$. |
+| **Remote / VPN** | Minor network jitter during a mature session. | **Stable Full Access** | The system relies on the historical inertia of the device/user. Transient VPN drops are absorbed without access revocation. |
+| **Public Wi-Fi** | High variance in the fresh network signal. | **Limited $\rightarrow$ Full Access** | System starts cautiously relying on fresh signals. As evidence of good device health accumulates over time, inertia builds, upgrading access to Full. |
+| **Untrusted Device / BYOD** | Device lacks history or has low health. | **Limited Access** | High network trust keeps the user in Limited Access, but the lack of positive device history prevents the ensemble score from reaching Full Access. |
+| **Compromised** | Sudden, systemic failure across domains. | **Immediate No Access** | If variance ($\sigma^2$) spikes aggressively due to anomalous behavior, the dynamic weight drops, causing the fusion engine to strip access despite any previous positive history. |
+| **Beaconing Attacker** | A known bad user sends a single perfect signal. | **No Access** | The system's memory ($1 - W_{short}$) heavily weights the prior history of malicious behavior. A single "clean" packet cannot overcome the inertia of negative trust. |
+
+## 6. Conclusion
 The Ensemble Model successfully implements **Contextual Durability**. It moves Zero Trust from a stateless "Packet Fighter" to a stateful "Behavior Engine," enabling robust security that respects the continuity of legitimate work.

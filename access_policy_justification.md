@@ -65,9 +65,22 @@ Why these specific numbers?
 
 ---
 
+## 4. CVSS v3.1 Mapping Matrix (Risk vs. Trust)
+
+The following table maps standard **CVSS v3.1 Vulnerability Ratings** to our **Access Decision Matrix**.
+This provides a clear policy for how known vulnerabilities impact trust scores.
+
+| CVSS v3.1 Severity | Risk Score | Implied Trust | Access Decision | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **None** | 0.0 | 1.0 | **Full Access** | **Perfect Hygiene**. No known vulnerabilities. The device meets the "Gold Standard" required for critical access. |
+| **Low** | 0.1 - 3.9 | ~0.60 - 0.99 | **Full / Limited** | **Acceptable Risk**. Minor issues (e.g., outdated benign app) do not inherently block access, provided other signals are strong. |
+| **Medium** | 4.0 - 6.9 | ~0.30 - 0.60 | **Limited / No Access** | **Containment Required**. Significant risk exists. The user is relegated to **Limited Access** (if score > 0.45) to isolate potential threats from critical data. |
+| **High** | 7.0 - 8.9 | ~0.10 - 0.30 | **No Access** | **Major Threat**. A high-severity vulnerability (e.g., unpatched RCE) drops the Trust Score below 0.45. Immediate denial to protect the network. |
+| **Critical** | 9.0 - 10.0 | ~0.00 - 0.10 | **No Access** | **Catastrophic Risk**. Effectively zero trust. The device is treated as compromised and blocked at the gateway. |
+
 ---
 
-## 4. Unified Compliance & Mapping Matrix
+## 5. Unified Compliance & Mapping Matrix
 
 The following table provides a **holistic view** of how our Access Decisions map across major industry frameworks.
 It demonstrates that a decision of "Full Access" is not arbitrary, but corresponds to specific, standardized criteria in NIST and CVSS.
