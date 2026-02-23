@@ -23,6 +23,16 @@ This implies that even if $T_{spatial}$ is a perfect $1.0$ (Corporate Office, ma
 
 **The Operational Reality**: A pure exponential decay model is unusable in a production environment. Users would be forcefully ejected from their applications every few minutes, causing complete operational paralysis.
 
+### 2.3 The Role of Lambda ($\lambda$) In Trust Volatility
+In the exponential temporal decay function $D_{exp}(t) = e^{-\lambda (t / T_{session})}$, the constant **$\lambda$ (lambda)** acts as the fulcrum between security strictness and session continuity by dictating the steepness or "velocity" of the initial drop in trust. 
+
+**Best Practices and Authoritative Recommendations (2022+)**:
+Modern Zero Trust capability execution roadmaps, such as the *Department of Defense (DoD) Zero Trust Strategy (Nov 2022)*, emphasize that initial authentication must be immediately succeeded by continuous, dynamic risk assessment to combat session hijacking and credential theft. In Continuous Adaptive Trust (CAT) models, trust is an ephemeral property that requires rapid degradation of historical "safe" states to force re-evaluation.
+
+*   **High $\lambda$ (e.g., $\lambda \ge 5.0$)**: Causes the trust factor to plummet precipitously the moment the session begins. This creates an extremely narrow verification window, virtually demanding continuous, frictionless re-authentication (such as continuous behavioral biometrics). It is suitable only for the most critical, zero-tolerance operations. 
+*   **Low $\lambda$ (e.g., $\lambda \le 1.0$)**: Flattens the decay curve, making the initial depreciation much more gradual. While mathematically still exponential, it behaves similarly to a linear decay in the early stages. This allows the initial "Freshness" to retain its authority slightly longer, prioritizing user continuity over rapid state expiration.
+*   **Recommended Baseline ($\lambda = 3.0$)**: For enterprise environments balancing security with UX, computing the exponential decay to reach a terminal state at the boundary of the maximum idle window is recommended. In our simulation, $\lambda$ is structurally calibrated to 3.0 specifically so that at the end of the session timeframe ($t = T_{session}$), the decay factor reaches an effectively terminal state ($e^{-3.0} \approx 0.05$). This ensures a predictable, rapid transition of decision-making authority away from the initial spatial snapshot, paving the way for historical inertia to assume control, aligning with the "never trust, always verify" principle emphasized in recent 2023-2024 CISA and Entrust continuous authentication frameworks.
+
 ## 3. Scenario Analysis: The Collapse of the Effective Session
 
 We evaluated this model against our six canonical scenarios, noting the severe compression of access durations compared to the linear variant.

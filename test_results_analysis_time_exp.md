@@ -13,6 +13,12 @@ The most striking feature of the exponential data is the extreme velocity at whi
 
 Unlike linear decay, where half the time means half the trust, exponential decay means half the time leaves only $\approx 20\%$ of the original trust weight.
 
+### 2.3 The Role of Lambda ($\lambda$)
+In the exponential temporal decay function $D_{exp}(t) = e^{-\lambda (t / T_{session})}$, the constant **$\lambda$ (lambda)** dictates the steepness or "velocity" of the initial drop in trust. 
+*   **High $\lambda$ (e.g., $\lambda \ge 5.0$)**: Causes trust to plummet precipitously the moment the session begins. This creates an extremely narrow verification window, virtually demanding continuous re-authentication. It is suitable only for the most critical, zero-tolerance operations.
+*   **Low $\lambda$ (e.g., $\lambda \le 1.0$)**: Flattens the curve, making the initial depreciation much more gradual (resembling a linear decay in the early stages). This allows the initial "Freshness" to retain its authority longer, prioritizing user continuity over strict temporal security.
+*   **Calculated Balance ($\lambda = 3.0$)**: In our simulation, $\lambda$ is calibrated to 3.0 specifically so that at the end of the session timeframe ($t = T_{session}$), the decay factor reaches effectively zero ($e^{-3.0} \approx 0.05$). This structural choice ensures a rapid transition of decision-making power from the initial snapshot to historical inertia, without instantly dropping the session in the very first step.
+
 ## 3. Scenario Analysis
 
 ### 3.1 The "Happy Paths" (Corporate Office & VPN)

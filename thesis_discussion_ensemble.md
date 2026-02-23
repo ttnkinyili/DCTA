@@ -56,6 +56,36 @@ In integrating long-term temporal inertia with real-time Dempster-Shafer fusion,
 *   A stable, 48-hour history accumulates significant mass, functioning as computational momentum. If a device suddenly broadcasts highly variable health signals (significant variance), a large sensitivity index (e.g., **$\alpha \ge 10$**) immediately collapses the signal weight of the current behavior. Therefore, the architecture relies almost entirely on the long-term inertia until an anomalous behavioral trend is sustained over multiple periods.
 *   Following recommendations from reputation degradation architectures (Mui et al., 2002, "A Computational Model of Trust and Reputation"), long-term session evaluation optimally functions with a balanced parameter (**$\alpha = 5.0$**). This configuration prevents the system's historical evaluation from being prematurely disrupted by benign sensor spikes, ensuring the long-term exponential factor ($D_{long}$) primarily governs the context's baseline evaluation.
 
+### 3.3 Constants and Tuning Parameters in the Ensemble Model
+
+The mathematical effectiveness of the Ensemble Trust Model relies on calibrating three primary constants: Euler's number ($e$), the decay velocity ($\lambda$), and the variance sensitivity ($\alpha$). Their tuning must align with Continuous Adaptive Trust (CAT) capabilities specified in modern frameworks (e.g., CISA Zero Trust Maturity Model v2.0, 2023; DoD Zero Trust Strategy, 2022).
+
+#### Euler's Number ($e \approx 2.71828$)
+*   **Role**: Serves as the mathematical base for the natural exponential decay function ($e^{-\lambda t}$). 
+*   **Justification**: Unlike linear decay which degrades steadily, or polynomial decay which drops abruptly to zero, the natural exponential function $e$ models continuous, proportional decay. It ensures that the "Freshness" of a handshake evaporates rapidly but never truly artificially bottoms out at an absolute mathematical zero before the session boundary. This provides the smooth, asymptotic degradation necessary to transfer weight linearly into Historical Inertia over time, making it the industry standard for modeling risk and reputation depreciation.
+
+#### The Decay Velocity Constant ($\lambda$)
+*   **Role**: Dictates the steepness or "velocity" of trust depreciation in the exponential function $W_{short}(t) = e^{-\lambda \cdot \frac{t}{T_{short}}}$.
+*   **Best Practices and Authoritative Recommendations (2022+)**: Modern Zero Trust frameworks emphasize that initial authentication must be succeeded by dynamic risk assessment to combat credential theft (DoD ZTO, 2022). Trust is ephemeral and must degrade rapidly to force system re-evaluation.
+    *   **High $\lambda$ ($\ge 5.0$)**: Causes trust to plummet precipitously. Suitable only for critical, zero-tolerance environments demanding continuous, frictionless re-authentication (e.g., behavioral biometrics).
+    *   **Low $\lambda$ ($\le 1.0$)**: Flattens the decay curve, allowing "Freshness" to retain authority longer. Prioritizes user continuity over rapid state expiration.
+    *   **Recommended Baseline ($\lambda = 3.0$)**: For enterprise environments balancing security with UX, $\lambda$ should be calibrated to reach an effectively terminal state (e.g., $e^{-3.0} \approx 0.05$) exactly at the maximum idle boundary ($T_{session}$). This forces a predictable transition of decision-making authority away from the initial spatial snapshot.
+
+#### The Variance Sensitivity Parameter ($\alpha$)
+*   **Role**: Located in the dynamic weighting mechanism ($W_d = \frac{1}{1 + \alpha \cdot \sigma^2}$), it governs how aggressively the system penalizes uncertainty and instability.
+*   **Recommended Baseline ($\alpha = 5.0$)**: In enterprise Zero Trust architectures, setting $\alpha = 5.0$ provides a logistic-style decay that penalizes sustained oscillation while absorbing negligible micro-jitter. This prevents "jitter-induced lockouts" over unstable public networks while retaining mathematical efficacy. For strictly regulated networks, an aggressive $\alpha \ge 10.0$ forces unstable signals to immediately lose influence on the consensus decision.
+
+### 3.4 Recommended Session Lengths 
+
+Based on NIST SP 800-63B guidelines and standard enterprise continuous authentication deployments (2023), the following boundaries are recommended for the Ensemble Engine:
+
+| Session Type | Purpose | Recommended Window ($T$) | Justification |
+| :--- | :--- | :--- | :--- |
+| **Short-Term (Freshness)** | **Verification** | **30 Minutes** | NIST AAL2 baseline for inactivity. Ensures the "Initial Handshake" value decays rapidly enough to prevent active session hijacking if a device is left unattended. |
+| **Short-Term (Critical)** | **Verification** | **15 Minutes** | PCI DSS v4.0 standard for sensitive data environments. Used when evaluating highly classified Data Domain contexts. |
+| **Long-Term (Inertia)** | **Continuity** | **48 Hours** | Limits the lifespan of historical momentum. Ensures "Trust" completely decays over a standard weekend gap, forcing a full, fresh re-authentication on Monday morning. |
+| **Long-Term (Critical)** | **Continuity** | **12 Hours** | NIST AAL3 standard. Prevents historical inertia from keeping an adversary authenticated overnight in highest-security enclaves. |
+
 ## 4. Mathematical Validation (The Ensemble Formula)
 The Weighted Mixture formula ensures stability by combining these two timeframes:
 
