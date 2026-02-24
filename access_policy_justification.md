@@ -92,6 +92,7 @@ It demonstrates that a decision of "Full Access" is not arbitrary, but correspon
 | **Limited Access** | **0.45 - 0.60** | **Moderate Confidence** | **IAL2 / AAL2** | **Medium (4.0 - 6.9)** | **"Bronze Standard"**. Valid Identity, but Environment is risky (Public Wi-Fi, BYOD) or Device has unpatched moderate issues. Access is restricted to non-sensitive apps. |
 | **No Access** | **< 0.45** | **Low Confidence** | **IAL1 / AAL1** | **High / Critical (≥ 7.0)** | **"Untrusted"**. The entity failed authentication or presents an unacceptable risk (e.g., active RCE vulnerability). All access is blocked. |
 
+
 ### Description of Mapping Columns
 1.  **Trust Score**: The internal value calculated by our Ensemble Model.
 2.  **NIST 800-207**: The "Confidence Level" required by the Policy Engine to grant access to resources of varying sensitivity.
@@ -102,3 +103,10 @@ It demonstrates that a decision of "Full Access" is not arbitrary, but correspon
 4.  **CVSS v3.1**: The maximum *allowable* vulnerability severity on the device.
     *   *Logic*: If a device has a **High (CVSS 8.0)** vulnerability, it cannot qualify for "Full" or "Limited" access; it falls to **No Access**.
 
+---
+
+## 6. The Imperative for Policy: Mitigating Implicit Trust Vulnerabilities
+
+The absence of rigorous, context-aware access policies—often manifesting as "Implicit Trust" or "No Policy" models following an initial perimeter breach—creates an existential vulnerability within modern, heterogeneous enterprise environments. Classic "castle-and-moat" architectures operate on the flawed assumption that authentication at the boundary equates to continuous authorization within the interior. In such open-policy ecosystems, once an attacker compromises a single endpoint (e.g., via a stolen VPN credential or a phishing payload on a remote employee's device), they are granted unchecked lateral mobility. Without continuous verification or micro-segmentation policies dictating *what* a specific user can access and *when*, this implicit trust becomes the primary vector for rapid malware propagation. Ransomware operations exploit these flat network topologies to automatically traverse horizontally, encrypting critical assets across servers and workstations that should have been mathematically isolated from the initial point of ingress (IBM Security, "Cost of a Data Breach Report 2024," 2024).
+
+Furthermore, open access policies severely exacerbate the risk and financial impact of internal data misuse and exfiltration. In environments lacking granular authorization thresholds (such as the discrete Trust Tiers defined above), both malicious insiders and compromised external actors operate with a surplus of unsanctioned privileges. The inability to dynamically restrict access based on shifting contextual risk (e.g., a sudden login from an anomalous location or via an unpatched device) allows attackers ample time to locate and siphon sensitive data undetected. The financial necessity of dismantling implicit trust is stark; organizations employing mature Zero Trust architectures—which inherently demand strict, continuous policy enforcement—have demonstrated an ability to reduce the lifecycle of a breach and lower the associated financial damages by over $1 million per incident compared to those relying on legacy, open-trust paradigms (Gartner, "Predicts 2024: Cybersecurity Infrastructure and Platform Shifts," 2023; IBM Security, 2024). Thus, enforcing a continuous, mathematically justified policy tiering system is not merely an exercise in theoretical security, but a quantifiable requirement for operational survival against automated modern threats.
