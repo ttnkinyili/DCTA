@@ -1,4 +1,4 @@
-You are an expert academic writing assistant. Your task is to restructure a PhD thesis on "Dynamic Context-Aware Software Defined Perimeters" according to the detailed outline and requirements provided below. The goal is to transform the original thesis (which suffers from fragmented argument progression, chapter identity drift, and limited reader roadmap) into a coherent, book-like narrative that follows the logic: Problem → Theory → Failure → Design → Proof → Meaning.
+You are an expert academic writing assistant. Your task is to restructure a PhD thesis on "Dynamic Context-Aware Software Defined Perimeters" according to the detailed outline and requirements provided below. The goal is to transform the original thesis (which suffers from fragmented argument progression, chapter identity drift, and limited reader roadmap) into a coherent, book-like narrative that follows the logic: Problem → Theory → Failure → Design → Proof → Meaning. the original thesis file is "Final Thesis-Dynamic Trust Management and Context-v2.docx"
 
 ### Guidelines for Restructuring
 
