@@ -16,7 +16,13 @@ This implicit trust period is not the residue of incomplete implementation. It i
 
 The consequences of this structural gap are empirically documented. The IBM Security (2024) *Cost of a Data Breach Report* identifies that the average time to identify and contain a breach remains 258 days in organisations relying on perimeter-centric and static access control architectures, with lateral movement within implicitly trusted zones accounting for the majority of the containment delay. The Cybersecurity and Infrastructure Security Agency (CISA, 2024) reports that exploitation of VPN appliance vulnerabilities — which inherit the authenticated user's full network visibility — constitutes one of the most frequently exploited initial access vectors in advanced persistent threat campaigns. These are not implementation failures; they are architectural consequences of systems that grant temporal passports at authentication boundaries and then lack the mathematical apparatus to depreciate, re-evaluate, or revoke those passports in response to post-authentication contextual changes.
 
-This paper presents a unified critical analysis demonstrating that five ostensibly progressive security paradigms — perimeter defence, static RBAC, NIST SP 800-207, CSA SDP, and AI-augmented IDS in SDN — all converge on the same structural failure. The analysis is not merely diagnostic; it is constructive. Each paradigm's failure is mapped to a specific absence in its trust evaluation architecture, and the Dynamic Contextual Trust Architecture (DCTA) Ensemble Model — integrating Dempster-Shafer evidential fusion, variance-based dynamic weighting, and exponential temporal decay — is positioned as the architectural bridge that transforms point-in-time authentication assurance into continuous, self-calibrating, uncertainty-aware trust evaluation.
+This paper presents a unified critical analysis demonstrating that five ostensibly progressive security paradigms — perimeter defence, static RBAC, NIST SP 800-207, CSA SDP, and AI-augmented IDS in SDN — all converge on the same structural failure. The analysis is not merely diagnostic; it is constructive. Each paradigm's failure is mapped to a specific absence in its trust evaluation architecture, and the Dynamic Contextual Trust Architecture (DCTA) Ensemble Trust Model (ETM) — integrating Dempster-Shafer evidential fusion, variance-based dynamic weighting, and exponential temporal decay — is positioned as the architectural bridge that transforms point-in-time authentication assurance into continuous, self-calibrating, uncertainty-aware trust evaluation.
+
+The contributions of this paper are threefold:
+
+1. **Unified diagnostic analysis**: A structured demonstration that five distinct security paradigms — spanning three decades of architectural evolution — share a single, common structural failure: the absence of continuous, temporally decaying, evidentially grounded trust evaluation during active sessions.
+2. **Failure-to-capability mapping**: A systematic mapping of each paradigm's specific vulnerability to the precise missing capability (Table 1), establishing the requirements that any resolution must satisfy.
+3. **Architectural resolution**: Positioning of the DCTA Ensemble Trust Model as the constructive resolution that bridges the identified gaps, with formal property analysis demonstrating its mathematical fitness for purpose.
 
 The remainder of this paper is organised as follows. Section 2 analyses the dissolution of the network perimeter. Section 3 examines the structural inadequacy of static RBAC. Sections 4 and 5 critique NIST SP 800-207 and CSA SDP respectively. Section 6 exposes the adversarial fragility of AI-augmented IDS in SDN. Section 7 synthesises the common thread across all five paradigms and presents the DCTA as the architectural resolution. Section 8 concludes.
 
@@ -231,14 +237,14 @@ $$
 
 where $\sigma_k^2$ is the rolling variance of domain $k$'s trust scores and $\alpha > 0$ is the variance penalty amplifier. This mechanism directly addresses the data poisoning vulnerability identified in Section 6: an attacker who compromises a sensor and forces it to broadcast artificially high or manipulated scores simultaneously introduces variance into the historical signal. The induced variance triggers weight suppression, converting spoofed testimony into mostly epistemic uncertainty. The vacuous identity property of Dempster's Rule ($m \oplus m_{\text{vacuous}} = m$) guarantees that a domain rendered vacuous by high variance is mathematically invisible in the fusion — it can neither help nor harm the consensus (Jøsang, 2016).
 
-**Table 2.** Domain weight dynamics under varying variance levels ($\alpha = 5$).
+**Table 2.** Domain weight dynamics under varying variance levels ($\alpha = 10$).
 
 | Domain State | $\sigma^2$ | $W_{\text{raw}}$ | Effect on Fusion |
 |:---|:---:|:---:|:---|
-| Stable, well-instrumented | 0.01 | 0.952 | Near-full evidential commitment |
-| Moderate jitter (BYOD) | 0.10 | 0.667 | One-third of evidence uncertain |
-| High volatility (IoT sensor) | 0.20 | 0.500 | Half the evidence is uncertain |
-| Suspected compromise | 0.50 | 0.286 | Domain nearly vacuous |
+| Stable, well-instrumented | 0.01 | 0.909 | Near-full evidential commitment |
+| Moderate jitter (BYOD) | 0.05 | 0.667 | One-third of evidence uncertain |
+| High volatility (IoT sensor) | 0.10 | 0.500 | Half the evidence is uncertain |
+| Suspected compromise | 0.25 | 0.286 | Domain nearly vacuous |
 
 This mechanism provides native resilience against the adversarial manipulation that Ali et al. (2024) document: variance-unstable evidence is automatically discounted regardless of its absolute value, preventing poisoned high-trust signals from dominating the fused output. The multi-domain architecture further strengthens this defence — an attacker who successfully spoofs one domain's context must simultaneously maintain consistent spoofing across all four independent domains to avoid triggering cross-domain conflict in the combination rule.
 
@@ -305,6 +311,22 @@ The DCTA's mathematical foundation provides three formal properties that directl
 **Property 2: Anti-Spoofing Through Variance Coupling.** The coupling between domain score (what the domain reports) and domain weight (how much the fusion trusts that report) creates a feedback mechanism that is inherently adversarial-resilient. An attacker who compromises a single evidence source and forces it to broadcast artificially high trust scores simultaneously introduces instability (variance) into the historical signal. The induced variance triggers weight suppression via $W_k = (1 + \alpha \sigma_k^2)^{-1}$, converting the attacker's spoofed high-trust testimony into primarily vacuous mass ($m(\Theta) \approx 1$). The vacuous identity property of Dempster's Rule guarantees that this vacuous contribution is mathematically invisible in the fusion output — neutralising the attack without requiring explicit attack detection.
 
 **Property 3: Self-Calibrating Uncertainty.** The architecture is self-calibrating at both boundary conditions and intermediate states. At perfect stability ($\sigma_k^2 = 0$), the domain achieves full evidential commitment ($m(\Theta) = 0$). At complete chaos ($\sigma_k^2 \to \infty$), the domain becomes vacuous ($m(\Theta) \to 1$). Between these extremes, uncertainty scales continuously and monotonically with observed instability, requiring no manual threshold calibration or predefined uncertainty budgets. This contrasts sharply with NIST's framework, which leaves uncertainty handling to implementation-specific ad hoc decisions, and with SDP's binary model, which lacks any uncertainty representation whatsoever.
+
+---
+
+### 7.5 Limitations
+
+The following limitations constrain the scope and generalisability of this analysis:
+
+1. **Analytical scope.** This paper provides an architectural and diagnostic analysis rather than empirical validation. The DCTA Ensemble Trust Model is presented as a candidate resolution whose formal properties are argued to address the identified gaps, but its operational effectiveness is validated in companion publications rather than within this paper. The claims regarding breach containment, latency, and classification accuracy are supported by the companion testbed and simulation studies, not by the critical analysis presented here.
+
+2. **Specification-level critique.** The five paradigms are analysed at the specification level (NIST SP 800-207, CSA SDP v2.0, published research papers) rather than from production deployment data. Implementation-specific mitigations — vendor-proprietary continuous monitoring add-ons, custom SIEM integrations, or organisation-specific RBAC extensions — may partially address the identified gaps in specific deployments without resolving the architectural absence at the specification level.
+
+3. **Binary framing.** The DCTA model's frame of discernment is binary ($\Theta = \{\text{Safe}, \text{Unsafe}\}$). While this is sufficient for the three-tiered access classification presented, more granular risk categorisation (e.g., $\{\text{Safe}, \text{Suspicious}, \text{Compromised}\}$) may be required for advanced threat response workflows. Extension to multi-state frames is architecturally feasible but increases DS combination complexity.
+
+4. **Adversarial adaptation.** The variance-based anti-spoofing mechanism (Property 2) addresses naïve attackers who introduce detectable variance. Sophisticated adversaries capable of maintaining low variance while reporting fabricated — but stable — high trust scores (the "stable-but-false" attack) require complementary hardware attestation (TPM 2.0) for mitigation, which is outside the scope of this analysis.
+
+5. **Paradigm selection.** The five paradigms were selected for their architectural significance and prevalence in the literature. Other relevant approaches — including blockchain-based authentication, SASE frameworks, and microsegmentation-only architectures — are acknowledged but not analysed in equivalent depth. Their inclusion would strengthen the comprehensiveness of the diagnostic but is unlikely to alter the central finding.
 
 ---
 

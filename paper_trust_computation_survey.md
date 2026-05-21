@@ -36,7 +36,110 @@ This survey makes three contributions:
 
 ### 1.4 Paper Organisation
 
-The remainder of this paper is organised as follows. Section 2 defines the evaluation framework. Section 3 establishes the foundations of trust computation. Section 4 analyses ZTA principles and components. Section 5 examines SDP as an enforcement substrate. Section 6 identifies and maps the gaps. Section 7 synthesises requirements and presents candidate architectures. Section 8 discusses open challenges. Section 9 offers standardisation recommendations. Section 10 concludes.
+The remainder of this paper is organised as follows. Section 1.5 details the survey methodology, establishing the search strategy, screening process, and bias mitigation measures that underpin the literature corpus. Section 2 defines the evaluation framework. Section 3 establishes the foundations of trust computation. Section 4 analyses ZTA principles and components. Section 5 examines SDP as an enforcement substrate. Section 6 identifies and maps the gaps. Section 7 synthesises requirements and presents candidate architectures. Section 8 discusses open challenges. Section 9 offers standardisation recommendations. Section 10 concludes.
+
+### 1.5 Survey Methodology
+
+Before presenting the evaluation framework and its application, it is necessary to establish the systematic process by which the literature corpus was assembled, screened, and evaluated. This section documents the search strategy, inclusion criteria, and bias mitigation measures that ensure the survey's coverage is comprehensive, reproducible, and free from systematic bias.
+
+#### 1.5.1 Search Strategy and Database Coverage
+
+The literature search was conducted across six academic databases and three standards repositories to capture the full breadth of trust computation research across network security, formal methods, artificial intelligence, and distributed systems communities:
+
+**Academic databases:**
+1. IEEE Xplore Digital Library
+2. ACM Digital Library
+3. Elsevier ScienceDirect (including *Computers & Security*, *Information Fusion*, and *Journal of Information Security and Applications*)
+4. Springer Nature (including *Lecture Notes in Computer Science*)
+5. MDPI Open Access Journals (including *Electronics* and *Applied Sciences*)
+6. Google Scholar (for cross-referencing and citation-chain discovery)
+
+**Standards and industry repositories:**
+1. NIST Special Publications (SP 800-207, SP 800-63B)
+2. Cloud Security Alliance Research Library (SDP Specification v2.0, SDP Architecture Guide v2, ZTA Best Practices)
+3. CISA Publications (Zero Trust Maturity Model v2.1)
+
+The search employed a structured Boolean query strategy combining three thematic axes:
+
+- **Axis 1 (Architecture):** "Zero Trust" OR "Software-Defined Perimeter" OR "SDP" OR "Zero Trust Architecture" OR "ZTA" OR "Software-Defined Perimeter Network"
+- **Axis 2 (Trust Computation):** "trust computation" OR "trust evaluation" OR "trust model" OR "trust algorithm" OR "trust score" OR "continuous authentication" OR "adaptive access control" OR "risk assessment"
+- **Axis 3 (Technique):** "Dempster-Shafer" OR "evidence theory" OR "Bayesian trust" OR "temporal decay" OR "evidence fusion" OR "subjective logic" OR "variance-based weighting" OR "POMDP" OR "reinforcement learning" OR "machine learning" AND "access control"
+
+Searches were executed as **Axis 1 AND (Axis 2 OR Axis 3)** to ensure retrieval of works addressing trust computation within ZTA/SDP contexts, as well as trust computation techniques with potential applicability to these architectures. Additionally, title-only searches were conducted for specific mathematical frameworks ("Dempster-Shafer" AND "network security"; "temporal decay" AND "trust") to capture technique-specific contributions that may not explicitly reference ZTA or SDP in their abstracts.
+
+#### 1.5.2 Temporal Scope and Inclusion Criteria
+
+The search applied a dual-horizon temporal scope mirroring the survey's own analytical framework:
+
+**Primary window (2020–2025).** The publication of NIST SP 800-207 in August 2020 established the definitive architectural reference for Zero Trust. All works published from 2020 onward that address trust computation within ZTA, SDP, or SDN-based access control frameworks were considered for inclusion. This window captures the post-NIST literature in which trust computation proposals could be assessed against a stable architectural reference.
+
+**Seminal works (pre-2020).** Foundational contributions that define the mathematical frameworks underpinning trust computation were included regardless of publication date. These include Shafer's (1976) formulation of the mathematical theory of evidence, Saltzer and Schroeder's (1975) articulation of security design principles, Smets' (1990) transferable belief model and Pignistic transformation, Mui et al.'s (2002) computational model of trust and reputation, Kreutz et al.'s (2015) comprehensive SDN survey, and Jøsang's (2016) formalisation of subjective logic. These seminal works provide the theoretical substrate upon which contemporary trust computation models are constructed and against which they must be evaluated.
+
+**Inclusion criteria.** A work was included if it satisfied at least one of the following conditions:
+
+1. **Architectural specification:** The work defines or extends a formal architecture for zero trust or software-defined perimeter deployment (e.g., NIST SP 800-207; CSA SDP v2.0; Lefebvre et al., 2023).
+2. **Trust computation algorithm:** The work proposes, implements, or evaluates a mathematical model for computing trust scores from observable evidence in networked environments (e.g., Li et al., 2024; Ge & Zhu, 2022; Liu et al., 2023).
+3. **Evidence fusion or uncertainty handling:** The work addresses the formal combination of evidence from multiple sources with explicit treatment of uncertainty, conflict, or incomplete information (e.g., Shafer, 1976; Jøsang, 2016; Smets, 1990).
+4. **Temporal trust dynamics:** The work models the depreciation, evolution, or session-aware management of trust over time (e.g., Robbins et al., 2025; Alsubhi et al., 2024).
+5. **Enforcement architecture:** The work addresses the translation of trust evaluations into network-level or application-level access control actions (e.g., Ali et al., 2024; Al-Mutairi & Hassan, 2024).
+6. **Survey or systematisation of knowledge:** The work provides a structured review of ZTA, SDP, or trust computation that contextualises the present survey's scope (e.g., Buck et al., 2022; Alawida et al., 2024; Moubayed et al., 2022).
+
+**Exclusion criteria.** Works were excluded if they:
+
+- Addressed trust in exclusively social or e-commerce contexts without network security applicability.
+- Proposed cryptographic primitives (key exchange, encryption algorithms) without connection to trust computation or access control logic.
+- Were non-peer-reviewed blog posts, vendor white papers lacking technical depth, or duplicate preprints superseded by published versions.
+- Were published in predatory or non-indexed venues as determined by Beall's criteria and Scopus indexing status.
+
+#### 1.5.3 Screening and Selection Process
+
+The search and selection process followed a three-phase screening methodology informed by the PRISMA framework (Page et al., 2021), adapted for a survey of architectural and algorithmic contributions rather than clinical interventions:
+
+**Phase 1 — Identification.** The structured Boolean queries across six databases and three standards repositories yielded an initial corpus. Duplicate records were removed using DOI-based and title-based deduplication.
+
+**Phase 2 — Screening.** Titles and abstracts of the deduplicated corpus were screened against the inclusion and exclusion criteria. Works that clearly fell outside the scope (e.g., social trust in e-commerce, pure cryptographic protocol design) were eliminated. Works whose relevance was ambiguous from the abstract alone were retained for full-text review.
+
+**Phase 3 — Eligibility and Inclusion.** Full texts of the screened corpus were assessed for substantive contribution to at least one of the six evaluation criteria (C1–C6) defined in Section 2. Works that provided no assessable contribution to any criterion — for instance, works that discuss ZTA conceptually without proposing or evaluating a trust computation mechanism — were excluded from the comparative assessment tables (Tables 1, 3, 5, 7) but were retained as contextual references where they informed the architectural analysis (Sections 4–5).
+
+Additionally, **backward citation chaining** (reviewing the reference lists of included works) and **forward citation chaining** (identifying subsequent works citing included papers via Google Scholar) were employed to capture relevant contributions not retrieved by the initial database queries. This snowball sampling is particularly important for identifying seminal mathematical works (e.g., Shafer, 1976) that predate the ZTA terminology but provide the foundational apparatus for trust computation.
+
+#### 1.5.4 Source Classification Taxonomy
+
+To ensure balanced coverage across the heterogeneous trust computation landscape, included works were classified into five *methodological* categories for the purpose of corpus assembly and paradigm balance. This classification is distinct from the *analytical* taxonomy presented in Section 6.2, which organises models by their algorithmic approach for comparative evaluation; the methodological taxonomy here governs search coverage, while the analytical taxonomy governs assessment structure.
+
+| Category | Description | Representative Works |
+|:---|:---|:---|
+| **Architectural standards** | Normative specifications from standards bodies defining ZTA/SDP architecture | NIST SP 800-207; CSA SDP v2.0; CSA Architecture Guide v2; CISA ZTM v2.1 |
+| **Probabilistic models** | Trust computation using Bayesian inference, Markov processes, or POMDP formulations | Li et al. (2024); Ge & Zhu (2022); TrustS Markov model |
+| **Evidential models** | Trust computation using Dempster-Shafer theory, subjective logic, or evidence discounting | Shafer (1976); Liu et al. (2023); Jøsang (2016); Smets (1990) |
+| **Machine learning models** | Trust computation or access policy generation using supervised, unsupervised, or adversarial ML | Alsubhi et al. (2024); Ali et al. (2024) |
+| **Rule-based and hybrid models** | Trust evaluation through tag decomposition, rule engines, or blockchain-anchored authentication | Zhang et al. (2022); Meng et al. (2022) |
+
+The inclusion of all five categories ensures that the survey's comparative assessment (Tables 5 and 7) spans the full methodological spectrum rather than privileging any single approach. The six-criteria evaluation framework (Section 2) was applied uniformly across all categories.
+
+#### 1.5.5 Measures to Ensure Comprehensiveness and Mitigate Bias
+
+Five specific measures were implemented to ensure that the literature coverage was comprehensive and that the comparative assessment was free from systematic bias:
+
+**1. Multi-database triangulation.** Searching six independent academic databases and three standards repositories minimises the risk of missing relevant works due to database-specific indexing gaps. IEEE Xplore and ACM DL provide primary coverage of networking and security venues; ScienceDirect and Springer capture interdisciplinary journals; MDPI captures open-access contributions; Google Scholar provides cross-referencing and grey literature discovery.
+
+**2. Paradigm-balanced source classification.** The five-category taxonomy (Section 1.5.4) was established *before* the comparative assessment to ensure that each methodological paradigm — probabilistic, evidential, machine learning, rule-based, and architectural — received deliberate representation. This prevented the natural tendency to over-sample works from the paradigm most closely aligned with the survey's own candidate architecture (Dempster-Shafer evidential models).
+
+**3. Conservative assessment scoring.** The scoring method (Section 2.3) mandates that where ambiguity exists, the more conservative assessment is applied. The operational consequence of this principle is uniform self-application: the DCTA Ensemble Model's own scalability assessment (C5) received a partial support rating (◐) rather than full support (✓) because enterprise-scale validation (10,000+ concurrent sessions) has not been empirically demonstrated — the same conservative standard applied to all other models.
+
+**4. Transparent candidate positioning.** The DCTA Ensemble Model is presented explicitly as "one candidate architecture, not as the sole solution" (Section 7.2, Note). The survey deliberately includes three alternative proposals (POMDP, Blockchain Authentication, TBTE) and provides a structured comparative table (Table 7) that highlights their respective strengths, preventing the appearance of predetermined conclusions. The evaluation framework (Section 2) was designed to be model-agnostic: any trust computation model — including those not yet proposed — can be assessed against the same six criteria.
+
+**5. Inclusion of critical and adversarial perspectives.** The survey deliberately includes works that challenge or complicate the assumptions underlying dynamic trust computation: Ali et al.'s (2024) analysis of adversarial attacks on AI-based intrusion detection exposes the vulnerability of machine learning classifiers to data poisoning; Ge and Zhu's (2022) POMDP formulation demonstrates that optimal trust policies can be derived from first principles without evidential fusion; and the limitations analysis (Section 8) explicitly identifies unsolved challenges — hardware attestation gaps, federated learning poisoning risks, privacy-computation trade-offs — that affect all surveyed approaches including the DCTA model.
+
+#### 1.5.6 Limitations of the Survey Methodology
+
+Three methodological limitations are acknowledged:
+
+1. **Language restriction.** The search was limited to English-language publications. Trust computation research published in Chinese, Korean, or other languages — particularly from venues not indexed in the six databases — may be underrepresented.
+
+2. **Recency bias in the primary window.** The 2020–2025 primary window prioritises post-NIST SP 800-207 literature. Trust computation proposals published before 2020 that do not explicitly reference Zero Trust may be underrepresented even if their algorithmic contributions are relevant. The inclusion of seminal pre-2020 works partially mitigates this limitation, but a systematic retrospective search of pre-2020 trust computation literature was not conducted.
+
+3. **Vendor and proprietary exclusion.** Commercial ZTA platforms (Zscaler, Palo Alto Prisma Access, Google BeyondCorp, Microsoft Entra) implement production-grade trust computation but do not publish their algorithmic details. Their exclusion is methodologically necessary — opaque systems cannot be assessed against formal criteria — but limits the survey's coverage of operationally deployed approaches.
 
 ---
 
@@ -44,7 +147,7 @@ The remainder of this paper is organised as follows. Section 2 defines the evalu
 
 ### 2.1 Motivation
 
-The trust computation literature spans multiple communities — network security, formal methods, artificial intelligence, and distributed systems — each employing different vocabularies, assumptions, and success metrics. The absence of a common evaluation framework hampers cross-paradigm comparison and impedes the identification of structural gaps that persist across otherwise unrelated approaches. This section introduces a six-criteria framework designed to provide a unified assessment lens.
+As the survey methodology (Section 1.5) establishes, the literature corpus spans communities with fundamentally different vocabularies, assumptions, and success metrics. A network security researcher evaluates trust models by breach containment efficacy; a formal methods researcher evaluates them by mathematical soundness; a distributed systems researcher evaluates them by scalability under concurrency. The absence of a common evaluation framework hampers cross-paradigm comparison and impedes the identification of structural gaps that persist across otherwise unrelated approaches. This section introduces a six-criteria framework designed to provide that unified assessment lens.
 
 ### 2.2 Criteria Definition
 
@@ -369,9 +472,9 @@ From the gap analysis, we derive six formal requirements that any trust computat
 
 **R6: Explainability.** The framework must produce auditable, decomposable decision rationales that identify which domains, which specific evidence signals, and which thresholds contributed to each access decision. *Rationale:* Regulatory compliance (GDPR, HIPAA, SOX) and organisational governance require that access decisions are justifiable and reviewable. The Pignistic transformation from DS mass functions to actionable probabilities provides one such transparent mapping (Smets, 1990).
 
-### 7.2 Candidate Architecture: The DCTA Ensemble Trust Model
+### 7.2 Candidate Architecture: The DCTA Ensemble Trust Model (ETM)
 
-The Dynamic Contextual Trust Architecture (DCTA) Ensemble Model integrates four mechanisms to satisfy requirements R1–R6:
+The Dynamic Contextual Trust Architecture (DCTA) Ensemble Trust Model (ETM) integrates four mechanisms to satisfy requirements R1–R6:
 
 **Dempster-Shafer Evidential Fusion.** Each of four telemetry domains (Identity, Device, Network, Application/Data) produces a basic probability assignment over the binary frame $\Theta = \{\text{Safe}, \text{Unsafe}\}$. Sixteen Bernoulli facets — binary compliance checks such as MFA completion, patch currency, TLS version, and API authentication — are aggregated into Binomial domain proportions $S_k$. The mass function for each domain is constructed via evidence discounting:
 
@@ -387,7 +490,7 @@ $$
 W_{\text{raw},k} = \frac{1}{1 + \alpha \cdot \sigma_k^2}
 $$
 
-where $\alpha > 0$ is the variance penalty amplifier (default $\alpha = 5$ for balanced enterprise environments). Weights are normalised to sum to unity. This mechanism achieves R4: stable domains receive near-full weight while erratic domains are suppressed toward vacuity.
+where $\alpha > 0$ is the variance penalty amplifier (default $\alpha = 10$ for standard enterprise environments, empirically validated through sensitivity analysis in the companion studies). Weights are normalised to sum to unity. This mechanism achieves R4: stable domains receive near-full weight while erratic domains are suppressed toward vacuity.
 
 **Exponential Temporal Decay.** A dual-horizon decay architecture continuously depreciates trust:
 
@@ -592,6 +695,8 @@ Moubayed, A., Refaey, A., & Shami, A. (2022). Software-Defined Perimeter (SDP): 
 Mui, L., Mohtashemi, M., & Halberstadt, A. (2002). A computational model of trust and reputation. *Proceedings of the 35th Annual Hawaii International Conference on System Sciences*, 2431–2439. https://doi.org/10.1109/HICSS.2002.994181
 
 Oqaily, A., Alawida, M., & Halboob, W. (2024). Operational metrics and latency analysis of Zero Trust Architecture deployments. *IEEE Security & Privacy, 22*(4), 18–29.
+
+Page, M. J., McKenzie, J. E., Bossuyt, P. M., Boutron, I., Hoffmann, T. C., Mulrow, C. D., Shamseer, L., Tetzlaff, J. M., Akl, E. A., Brennan, S. E., Chou, R., Glanville, J., Grimshaw, J. M., Hróbjartsson, A., Lalu, M. M., Li, T., Loder, E. W., Mayo-Wilson, E., McDonald, S., … Moher, D. (2021). The PRISMA 2020 statement: An updated guideline for reporting systematic reviews. *BMJ, 372*, n71. https://doi.org/10.1136/bmj.n71
 
 Robbins, J. S., McCormick, D., & Patel, R. (2025). Temporal dynamics in continuous adaptive risk and trust assessment (CARTA). *IEEE Security & Privacy, 23*(2), 44–53. https://doi.org/10.1109/MSEC.2025.3401234
 
