@@ -1,0 +1,79 @@
+Testcase 2 output
+
+
+{
+  "user": {
+    "role": "admin"
+  },
+  "application": {
+    "status": "allowed"
+  },
+  "network": {
+    "location": "remote"
+  },
+  "device": {
+    "trust": "trusted"
+  }
+}
+
+
+Input
+
+{
+  "user": {
+    "id": "user123",
+    "category": "admin"
+  },
+  "device": {
+    "id": "deviceA",
+    "trust": "trusted"
+  },
+  "application": {
+    "name": "finance-dashboard",
+    "type": "allowed"
+  }
+}
+
+
+
+Query
+
+POST /v1/data/zerotrust/access
+
+
+
+Output
+
+
+{
+  "result": {
+    "access": "full"
+  }
+}
+
+
+
+Variations
+
+		Guest + Trusted Device
+
+
+				{
+				  "access": "limited"
+				}
+
+
+		
+		Admin + Untrusted Device
+
+			{
+ 				 "access": "limited"
+			}
+
+		Blacklisted User
+
+			{
+ 				 "access": "none"
+			}
+
+

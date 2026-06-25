@@ -1,0 +1,179 @@
+package authzt
+
+# Default decision is "Rejected"
+default grant_access = false
+
+# Domain Definitions
+# =================
+
+# User types with hierarchical permissions
+user_types = {
+    "admin": {"level": 3, "description": "Full access"},
+    "guest": {"level": 1, "description": "Limited access"},
+    "blacklisted": {"level": 0, "description": "No access"}
+}
+
+# Application/Service access states
+app_states = {
+    "allowed": true,
+    "blocked": false
+}
+
+# Network locations
+network_locations = {
+    "remote": {"trust_level": 1},
+    "local": {"trust_level": 3}
+}
+
+# Device trust levels
+device_trust = {
+    "trusted": {"level": 3},
+    "untrusted": {"level": 1}
+}
+
+# Access Policies
+# ===============
+
+# 1. Base access rule - checks all domains
+grant_access {
+    # User must not be blacklisted
+    user_types[input.user].level > 0
+    
+    # Application must be allowed
+    app_states[input.application] == true
+    
+    # Network and device checks (can be overridden by user level)
+    check_network_and_device
+}
+
+# 2. Network and device validation
+check_network_and_device {
+    # For trusted devices, allow from anywhere
+    device_trust[input.device].level >= 2
+}
+
+check_network_and_device {
+    # For untrusted devices, only allow from local network
+    device_trust[input.device].level < 2
+    network_locations[input.network].trust_level >= 3
+}
+
+check_network_and_device {
+    # Admin users bypass network/device restrictions
+    user_types[input.user].level >= 3
+}
+
+# 3. Administrative override - admins can access blocked apps
+grant_access {
+    user_types[input.user].level >= 3
+    # Even blocked apps are accessible by admins
+    user_types[input.user].level >= 3
+}
+
+# 4. Explicit rejection rules (take precedence)
+reject_access {
+    # Blacklisted users always rejected
+    user_types[input.user].level == 0
+}
+
+reject_access {
+    # Non-admin users trying to use blocked apps
+    user_types[input.user].level < 3
+    app_states[input.application] == false
+}
+
+# Main Decision Function
+# ======================
+
+# Returns structured decision with reasons
+decision := {
+    "granted": grant_access,
+    "rejected": reject_access,
+    "final_decision": final_decision,
+    "reasons": reasons,
+    "user_level": user_types[input.user].level,
+    "details": {
+        "user": input.user,
+        "application": input.application,
+        "network": input.network,
+        "device": input.device
+    }
+}
+
+# Final decision calculation
+final_decision {
+    grant_access
+    not reject_access
+} := "Granted"
+
+final_decision {
+    reject_access
+} := "Rejected"
+
+final_decision = "Rejected"  # default
+
+# Collect reasons for the decision
+reasons := reason_set {
+    # User-based reasons
+    reason_set := {"User is blacklisted"} {
+        user_types[input.user].level == 0
+    }
+    
+    reason_set := reason_set | {"Application is blocked"} {
+        app_states[input.application] == false
+        user_types[input.user].level < 3
+    }
+    
+    # Network/device reasons
+    reason_set := reason_set | {"Untrusted device on remote network"} {
+        device_trust[input.device].level < 2
+        network_locations[input.network].trust_level < 3
+        not user_types[input.user].level >= 3
+    }
+    
+    # Positive reasons for grants
+    reason_set := reason_set | {"Admin user with full privileges"} {
+        user_types[input.user].level >= 3
+        grant_access
+    }
+    
+    reason_set := reason_set | {"Allowed application on trusted device"} {
+        app_states[input.application] == true
+        device_trust[input.device].level >= 2
+        grant_access
+        not user_types[input.user].level >= 3
+    }
+    
+    # Default if no reasons captured
+    reason_set := {"No specific reasons recorded"} {
+        count(reason_set) == 0
+    }
+}
+
+# Helper Functions
+# ================
+
+# Check if user has at least a certain permission level
+user_has_min_level(min_level) {
+    user_types[input.user].level >= min_level
+}
+
+# Check if combination is allowed
+is_allowed_combination {
+    grant_access
+    not reject_access
+}
+
+# Query examples (commented out for clarity)
+# ==========================================
+# Query 1: Check if access is granted
+# grant_access
+#
+# Query 2: Get full decision object
+# decision
+#
+# Query 3: Check specific user permission level
+# user_has_min_level(2)
+#
+# Query 4: Get reasons for rejection
+# decision.reasons

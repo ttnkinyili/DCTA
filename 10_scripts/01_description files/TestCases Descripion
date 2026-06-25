@@ -1,0 +1,72 @@
+TestCases Descripion:
+
+
+TestCAse 1: Single Domain Criteria based Evaluation
+			No policy, All services and containers can ping each other
+			Restrict access based on  one domain criteria: Allowed service, allowed user, allowed device
+
+TestCAse 2: Multidomain evaluation. User with Enterprise Owned Devices and controlled apps (Uknowned user;device known; apps mostly trusted)
+
+			Clear deny-first semantics
+			✔ Easy to extend with:	Risk scores, Time-based rules, Dynamic trust calculations, 	MITRE ATT&CK–based conditions
+			✔ Deterministic and auditable
+
+
+
+
+Testcase 3: Multi-domain with Static trust scores and contextual weights for domains
+
+					Extend the Policy to Numeric Trust Scores
+					1.1 Motivation:	Binary trust labels (trusted / untrusted) are overly simplistic for Zero Trust. Modern Zero Trust architectures treat trust as continuous and dynamic, influenced by posture, behavior, and context.
+
+					Trust Score Inputs
+
+					User trust score (identity assurance, role, history)
+
+					Device trust score (Trusted (Enterprise owned),patch level, EDR-compliance)
+
+					Application risk score (Allowed, sensitivity, exposure)
+
+		This implementation aligns with continuous trust evaluation, a core principle of Zero Trust (NIST SP 800-207). By replacing static labels with weighted trust aggregation, authorization becomes adaptive rather than declarative.
+
+		The weighted sum model:
+
+		Enables policy tunability
+
+		Allows experimentation with sensitivity analysis
+
+		Provides a bridge between rule-based and probabilistic authorization
+
+		This design is especially suitable for research testbeds, where trust weighting can be empirically optimized using traffic logs or attack simulations.
+
+
+
+
+Testcase 4: Data(),Device(), Application/Service(), Network()
+
+	Key Features:
+		Hierarchical Evaluation: Blacklisted users are immediately rejected, Admin users bypass most restrictions while Guest users have limited access
+
+		Multidomain- Domain Integration:User domain (Admin/Guest/Blacklisted); Application domain (Allowed/Blocked); Network domain (Remote/Local) ; Device domain (Trusted/Untrusted)
+
+		Decision Transparency: Clear grant/reject status with Detailed reasons for decisions, especially Final decision calculation
+
+		Flexible Policies:Trusted devices can connect from anywhere; Untrusted devices restricted to local network; Admins can access blocked applications
+
+		The policy follows the principle of least privilege and provides clear audit trails for access decisions.
+
+
+
+
+
+Testcase 5: COntextual trust weighting
+
+
+
+
+
+
+
+
+Testcase 6: Trust weighting with temporal decay
+

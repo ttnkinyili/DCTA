@@ -1,0 +1,60 @@
+Zero Trust Access Policy - Test Cases Summary
+Test Case User Category User Trust  Device Trust  App Risk  Aggregate Trust Access Level  Key Reason
+TC1 Admin 0.9 0.7 0.2 0.78  Full  Admin with trust ≥ 0.75 threshold
+TC2 Admin 0.6 0.5 0.5 0.58  Limited Admin trust < 0.75 but ≥ 0.45
+TC3 Regular 0.85  0.8 0.1 0.82  Limited Non-admin with trust ≥ 0.45
+TC4 Blacklisted 0.0 1.0 0.0 0.8 None  Blacklisted user (immediate denial)
+TC5 Guest 0.3 0.4 0.8 0.36  None  Trust < 0.45 minimum threshold
+TC6 Regular 0.9 0.9 0.9 0.42  None  High-risk app reduces trust below threshold
+TC7 Regular 0.6 0.5 0.3 0.56  Limited Borderline case above 0.45 threshold
+Decision Thresholds Matrix
+User Category Trust Score Range Access Level  Notes
+Blacklisted Any score None  Immediate denial regardless of trust
+Admin ≥ 0.75  Full  Highest privilege level
+Admin 0.45 - 0.74 Limited Admin with moderate trust
+Admin/Regular/Guest < 0.45  None  Below minimum trust threshold
+Regular/Guest ≥ 0.45  Limited Standard limited access
+Trust Calculation Formula
+Aggregate Trust = (user_trust × 0.4) + (device_trust × 0.4) + ((1 - app_risk) × 0.2)
+
+Weights: User (40%) • Device (40%) • Application (20%)
+
+Key Policy Insights
+Absolute Rules:
+
+Blacklisted users are always denied (highest priority)
+
+Admin status provides privilege but still requires minimum trust
+
+Trust Thresholds:
+
+Full Access: ≥ 0.75 (admins only)
+
+Limited Access: ≥ 0.45 (all users)
+
+No Access: < 0.45 (all users)
+
+Impact Factors:
+
+High-risk applications significantly reduce aggregate trust
+
+Device trust is equally weighted as user trust
+
+Low user trust cannot be fully compensated by other factors
+
+Decision Logic Flow:
+
+text
+1. Is user blacklisted? → Deny
+2. Calculate aggregate trust
+3. Is user admin AND trust ≥ 0.75? → Full access
+4. Is trust ≥ 0.45? → Limited access
+5. Default → No access
+Test Coverage Summary
+Test Type Cases Coverage
+Admin scenarios TC1, TC2  Admin with high/low trust
+Blacklisted override  TC4 Policy priority testing
+Threshold boundaries  TC5, TC7  Edge cases around 0.45
+High-risk application TC6 App risk impact
+Regular user flows  TC3, TC7  Standard user behavior
+This table demonstrates how the Zero Trust policy evaluates access decisions based on multiple weighted factors while maintaining clear security boundaries and privilege separation.

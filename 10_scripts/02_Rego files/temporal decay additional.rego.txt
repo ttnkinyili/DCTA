@@ -1,0 +1,31 @@
+package zero_trust.temporal
+
+# Session trust with exponential decay
+session_trust[user_id] = decayed_score {
+    session := sessions[user_id]
+    current_time := time.now_ns() / 1000000000  # Convert to seconds
+    idle_time := current_time - session.last_activity
+    
+    # Exponential decay: trust = initial_trust * e^(-λ * idle_time)
+    decay_rate := 0.0001  # λ = 0.0001 per second
+    decayed_score := session.initial_trust * math.exp(-decay_rate * idle_time)
+    
+    # Minimum trust threshold
+    decayed_score > 0.1
+}
+
+# Re-authentication required if trust decays below threshold
+reauthentication_required {
+    user_id := input.user.id
+    session_trust[user_id] < 0.3
+}
+
+# Session management
+sessions := {
+    "user123": {
+        "initial_trust": 0.9,
+        "start_time": 1672531200,
+        "last_activity": 1672534800,
+        "device_fingerprint": "abc123"
+    }
+}

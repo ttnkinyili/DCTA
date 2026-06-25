@@ -1,0 +1,99 @@
+mininet> h1 curl -v http://10.0.0.2:80
+*   Trying 10.0.0.2:80...
+* Connected to 10.0.0.2 (10.0.0.2) port 80 (#0)
+> GET / HTTP/1.1
+> Host: 10.0.0.2:80
+> User-Agent: curl/7.81.0
+> Accept: */*
+> 
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 200 OK
+< Server: SimpleHTTP/0.6 Python/3.10.12
+< Date: Wed, 04 Feb 2026 10:30:45 GMT
+< Content-type: text/html; charset=utf-8
+< Content-Length: 467
+< 
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Directory listing for /</title>
+</head>
+<body>
+<h1>Directory listing for /</h1>
+<hr>
+<ul>
+<li><a href=".bash_logout">.bash_logout</a></li>
+<li><a href=".bashrc">.bashrc</a></li>
+<li><a href=".profile">.profile</a></li>
+</ul>
+<hr>
+</body>
+</html>
+* Connection #0 to host 10.0.0.2 left intact
+
+
+
+mininet> h1 curl -v --connect-timeout 5 http://10.0.0.3:80
+*   Trying 10.0.0.3:80...
+* connect to 10.0.0.3 port 80 failed: Connection timed out
+* Failed to connect to 10.0.0.3 port 80 after 5001 ms: Connection timed out
+* Closing connection 0
+curl: (28) Failed to connect to 10.0.0.3 port 80 after 5001 ms: Connection timed out
+
+# Alternative output with OPA policy rejection:
+mininet> h1 curl -v -H "X-User-Category: guest" -H "X-Device-Category: untrusted" http://10.0.0.3:80
+*   Trying 10.0.0.3:80...
+* Connected to 10.0.0.3 (10.0.0.3) port 80 (#0)
+> GET / HTTP/1.1
+> Host: 10.0.0.3:80
+> User-Agent: curl/7.81.0
+> Accept: */*
+> X-User-Category: guest
+> X-Device-Category: untrusted
+> 
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 403 Forbidden
+< Date: Wed, 04 Feb 2026 10:36:45 GMT
+< Content-Type: application/json
+< Content-Length: 145
+< X-OPA-Decision: denied
+< 
+{
+  "decision_id": "b8a7d2c1-4f3e-4a2b-9c1d-3e6f5a2b1c7d",
+  "result": {
+    "access": "none",
+    "reason": "Access denied: Guest user with untrusted device",
+    "timestamp": 1738665405123456789
+  }
+}
+* Connection #0 to host 10.0.0.3 left intact
+
+
+
+
+mininet> h1 curl -v -H "X-App-Type: blocked" http://10.0.0.2:80/blocked-app
+*   Trying 10.0.0.2:80...
+* Connected to 10.0.0.2 (10.0.0.2) port 80 (#0)
+> GET /blocked-app HTTP/1.1
+> Host: 10.0.0.2:80
+> User-Agent: curl/7.81.0
+> Accept: */*
+> X-App-Type: blocked
+> 
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 403 Forbidden
+< Date: Wed, 04 Feb 2026 10:39:00 GMT
+< Content-Type: application/json
+< Content-Length: 138
+< X-OPA-Decision: app-blocked
+< 
+{
+  "decision_id": "d0c9f4e3-6h5g-6c4d-1e3f-5g8h7c4d3e9f",
+  "result": {
+    "access": "none",
+    "reason": "Access denied: Blocked application",
+    "app_name": "blocked-app"
+  }
+}
+* Connection #0 to host 10.0.0.2 left intact

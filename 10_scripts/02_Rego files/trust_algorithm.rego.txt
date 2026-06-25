@@ -1,0 +1,315 @@
+package zero_trust.trust_algorithm
+
+import future.keywords
+
+# ============================================
+# BASE CONFIGURATION
+# ============================================
+base_score := 0.4
+full_access_threshold := 0.75
+limited_access_threshold := 0.45
+
+# Domain weights (static defaults - dynamically adjusted in evaluation)
+domain_weights := {
+    "data": 0.35,
+    "device": 0.30,
+    "application": 0.20,
+    "network": 0.15
+}
+
+# Sub-weights within each domain
+sub_weights := {
+    "data": {"integrity": 0.4, "freshness": 0.3, "authenticity": 0.3},
+    "device": {"identity": 0.4, "reputation": 0.3, "compliance": 0.3},
+    "application": {"vulnerability": 0.4, "consistency": 0.3, "access_compliance": 0.3},
+    "network": {"anomalies": 0.4, "protocol_score": 0.3, "node_reputation": 0.3}
+}
+
+# ============================================
+# DOMAIN SCORE CALCULATION - DYNAMIC WEIGHTED SUM
+# ============================================
+
+# Calculate Data Domain Score
+data_domain_score := score {
+    metrics := input.data
+    
+    weighted_sum := (
+        (metrics.integrity * sub_weights.data.integrity) +
+        (metrics.freshness * sub_weights.data.freshness) +
+        (metrics.authenticity * sub_weights.data.authenticity)
+    )
+    
+    total_weight := sub_weights.data.integrity + 
+                    sub_weights.data.freshness + 
+                    sub_weights.data.authenticity
+    
+    raw_score := weighted_sum / total_weight
+    score := max([raw_score, base_score])
+}
+
+# Calculate Device Domain Score
+device_domain_score := score {
+    metrics := input.device
+    
+    weighted_sum := (
+        (metrics.identity * sub_weights.device.identity) +
+        (metrics.reputation * sub_weights.device.reputation) +
+        (metrics.compliance * sub_weights.device.compliance)
+    )
+    
+    total_weight := sub_weights.device.identity + 
+                    sub_weights.device.reputation + 
+                    sub_weights.device.compliance
+    
+    raw_score := weighted_sum / total_weight
+    score := max([raw_score, base_score])
+}
+
+# Calculate Application Domain Score
+application_domain_score := score {
+    metrics := input.application
+    
+    weighted_sum := (
+        (metrics.vulnerability * sub_weights.application.vulnerability) +
+        (metrics.consistency * sub_weights.application.consistency) +
+        (metrics.access_compliance * sub_weights.application.access_compliance)
+    )
+    
+    total_weight := sub_weights.application.vulnerability + 
+                    sub_weights.application.consistency + 
+                    sub_weights.application.access_compliance
+    
+    raw_score := weighted_sum / total_weight
+    score := max([raw_score, base_score])
+}
+
+# Calculate Network Domain Score
+network_domain_score := score {
+    metrics := input.network
+    
+    weighted_sum := (
+        (metrics.anomalies * sub_weights.network.anomalies) +
+        (metrics.protocol_score * sub_weights.network.protocol_score) +
+        (metrics.node_reputation * sub_weights.network.node_reputation)
+    )
+    
+    total_weight := sub_weights.network.anomalies + 
+                    sub_weights.network.protocol_score + 
+                    sub_weights.network.node_reputation
+    
+    raw_score := weighted_sum / total_weight
+    score := max([raw_score, base_score])
+}
+
+# Domain scores collection
+domain_scores := {
+    "data": data_domain_score,
+    "device": device_domain_score,
+    "application": application_domain_score,
+    "network": network_domain_score
+}
+
+# Confidence multipliers based on metadata availability
+confidence_multiplier(domain) := input[domain].confidence {
+    input[domain].confidence
+} else := 0.5  # Default confidence if missing
+
+# ============================================
+# WEIGHTED BELIEF FUSION (Dempster-Shafer)
+# ============================================
+
+# Calculate belief, disbelief, uncertainty for a domain
+domain_belief(domain) := belief_result {
+    score := domain_scores[domain]
+    confidence := confidence_multiplier(domain)
+    
+    # Belief = trust score * confidence
+    belief := score * confidence
+    
+    # Disbelief = (1 - trust score) * confidence
+    disbelief := (1 - score) * confidence
+    
+    # Uncertainty = 1 - confidence (lack of metadata)
+    uncertainty := 1 - confidence
+    
+    # Normalize
+    total := belief + disbelief + uncertainty
+    belief_result := {
+        "belief": belief / total,
+        "disbelief": disbelief / total,
+        "uncertainty": uncertainty / total
+    }
+}
+
+# Collect all domain beliefs
+domain_beliefs := {
+    "data": domain_belief("data"),
+    "device": domain_belief("device"),
+    "application": domain_belief("application"),
+    "network": domain_belief("network")
+}
+
+# Fuse two belief sets using Dempster's rule
+fuse_beliefs(b1, b2) := fused {
+    # Calculate combined belief
+    belief := (b1.belief * b2.belief) + 
+              (b1.belief * b2.uncertainty) + 
+              (b1.uncertainty * b2.belief)
+    
+    # Calculate combined disbelief
+    disbelief := (b1.disbelief * b2.disbelief) + 
+                 (b1.disbelief * b2.uncertainty) + 
+                 (b1.uncertainty * b2.disbelief)
+    
+    # Calculate combined uncertainty
+    uncertainty := b1.uncertainty * b2.uncertainty
+    
+    # Normalization factor (conflict)
+    k := 1 - (b1.belief * b2.disbelief + b1.disbelief * b2.belief)
+    
+    fused := {
+        "belief": belief / k,
+        "disbelief": disbelief / k,
+        "uncertainty": uncertainty / k
+    }
+}
+
+# Fuse all domains sequentially
+fused_belief := fuse_all([
+    domain_beliefs.data,
+    domain_beliefs.device,
+    domain_beliefs.application,
+    domain_beliefs.network
+])
+
+fuse_all(beliefs) := fused {
+    count(beliefs) == 1
+    fused := beliefs[0]
+}
+
+fuse_all(beliefs) := fused {
+    count(beliefs) > 1
+    fused := fuse_beliefs(beliefs[0], fuse_all(beliefs[1:]))
+}
+
+# ============================================
+# DYNAMIC WEIGHT ADJUSTMENT
+# ============================================
+
+# Adjust weights based on confidence multipliers
+adjusted_domain_weights := adjusted {
+    multipliers := {
+        "data": confidence_multiplier("data"),
+        "device": confidence_multiplier("device"),
+        "application": confidence_multiplier("application"),
+        "network": confidence_multiplier("network")
+    }
+    
+    raw_weights := {
+        "data": domain_weights.data * multipliers.data,
+        "device": domain_weights.device * multipliers.device,
+        "application": domain_weights.application * multipliers.application,
+        "network": domain_weights.network * multipliers.network
+    }
+    
+    total := raw_weights.data + raw_weights.device + 
+             raw_weights.application + raw_weights.network
+    
+    adjusted := {
+        "data": raw_weights.data / total,
+        "device": raw_weights.device / total,
+        "application": raw_weights.application / total,
+        "network": raw_weights.network / total
+    }
+}
+
+# ============================================
+# OVERALL TRUST CALCULATION
+# ============================================
+
+# Dynamic Weighted Sum trust score
+dws_trust_score := score {
+    score := (domain_scores.data * adjusted_domain_weights.data) +
+             (domain_scores.device * adjusted_domain_weights.device) +
+             (domain_scores.application * adjusted_domain_weights.application) +
+             (domain_scores.network * adjusted_domain_weights.network)
+}
+
+# Belief fusion trust score
+belief_trust_score := fused_belief.belief
+
+# Combined trust score (70% DWS, 30% Belief Fusion)
+combined_trust_score := score {
+    score := (0.7 * dws_trust_score) + (0.3 * belief_trust_score)
+}
+
+# Apply base score floor
+final_trust_score := max([combined_trust_score, base_score])
+
+# ============================================
+# ACCESS DECISION
+# ============================================
+
+access_level := "full" {
+    final_trust_score >= full_access_threshold
+}
+
+access_level := "limited" {
+    final_trust_score >= limited_access_threshold
+    final_trust_score < full_access_threshold
+}
+
+access_level := "none" {
+    final_trust_score < limited_access_threshold
+}
+
+# ============================================
+# COMPLETE DECISION OUTPUT
+# ============================================
+
+decision := {
+    "trust_score": final_trust_score,
+    "access_level": access_level,
+    "thresholds": {
+        "full": full_access_threshold,
+        "limited": limited_access_threshold
+    },
+    "domain_scores": domain_scores,
+    "domain_weights": adjusted_domain_weights,
+    "belief_fusion": fused_belief,
+    "uncertainty": {
+        "data": domain_beliefs.data.uncertainty,
+        "device": domain_beliefs.device.uncertainty,
+        "application": domain_beliefs.application.uncertainty,
+        "network": domain_beliefs.network.uncertainty
+    },
+    "dws_score": dws_trust_score,
+    "belief_score": belief_trust_score,
+    "confidence": (confidence_multiplier("data") + 
+                   confidence_multiplier("device") + 
+                   confidence_multiplier("application") + 
+                   confidence_multiplier("network")) / 4,
+    "timestamp": time.now_ns()
+}
+
+# ============================================
+# REASONING GENERATION
+# ============================================
+
+reasoning := reason {
+    access_level == "full"
+    reason := sprintf("Full access granted. Trust score: %.2f exceeds threshold of %.2f. Strong posture across all domains with low uncertainty.", 
+                     [final_trust_score, full_access_threshold])
+}
+
+reasoning := reason {
+    access_level == "limited"
+    reason := sprintf("Limited access granted. Trust score: %.2f is between %.2f and %.2f. Some domains show weakness or moderate uncertainty.", 
+                     [final_trust_score, limited_access_threshold, full_access_threshold])
+}
+
+reasoning := reason {
+    access_level == "none"
+    reason := sprintf("Access denied. Trust score: %.2f below minimum threshold of %.2f. Critical deficiencies detected across multiple domains.", 
+                     [final_trust_score, limited_access_threshold])
+}

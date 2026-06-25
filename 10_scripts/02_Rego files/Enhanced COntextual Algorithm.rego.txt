@@ -1,0 +1,96 @@
+package zero_trust.contextual
+
+import future.keywords
+
+# Multi-dimensional trust factors
+trust_factors := {
+    "identity": {
+        "weight": 0.35,
+        "components": {
+            "auth_method": {"mfa": 1.0, "password": 0.5, "none": 0.0},
+            "session_age": {"fresh": 1.0, "stale": 0.7, "expired": 0.0},
+            "behavior_score": {"normal": 1.0, "suspicious": 0.3, "malicious": 0.0}
+        }
+    },
+    "device": {
+        "weight": 0.30,
+        "components": {
+            "patch_level": {"updated": 1.0, "outdated": 0.4, "vulnerable": 0.0},
+            "encryption": {"full": 1.0, "partial": 0.6, "none": 0.0},
+            "location": {"corporate": 1.0, "remote": 0.7, "unknown": 0.3}
+        }
+    },
+    "network": {
+        "weight": 0.20,
+        "components": {
+            "segmentation": {"micro": 1.0, "macro": 0.6, "none": 0.0},
+            "traffic_pattern": {"normal": 1.0, "anomalous": 0.3},
+            "protocol": {"tls": 1.0, "http": 0.5, "plain": 0.0}
+        }
+    },
+    "application": {
+        "weight": 0.15,
+        "components": {
+            "sensitivity": {"low": 1.0, "medium": 0.7, "high": 0.4, "critical": 0.1},
+            "compliance": {"compliant": 1.0, "partial": 0.6, "non-compliant": 0.0}
+        }
+    }
+}
+
+# Calculate comprehensive trust score
+comprehensive_trust := score {
+    # Extract input context
+    identity_score := calculate_identity_score
+    device_score := calculate_device_score
+    network_score := calculate_network_score
+    app_score := calculate_app_score
+    
+    # Weighted sum
+    score := (identity_score * trust_factors.identity.weight) +
+             (device_score * trust_factors.device.weight) +
+             (network_score * trust_factors.network.weight) +
+             (app_score * trust_factors.application.weight)
+}
+
+# Dynamic access levels
+access_tier := tier {
+    comprehensive_trust >= 0.85
+    tier := "privileged"
+}
+
+access_tier := tier {
+    comprehensive_trust >= 0.65
+    comprehensive_trust < 0.85
+    tier := "standard"
+}
+
+access_tier := tier {
+    comprehensive_trust >= 0.40
+    comprehensive_trust < 0.65
+    tier := "restricted"
+}
+
+access_tier := tier {
+    comprehensive_trust < 0.40
+    tier := "blocked"
+}
+
+# Output with detailed breakdown
+decision := {
+    "access_tier": access_tier,
+    "comprehensive_trust": comprehensive_trust,
+    "factor_scores": {
+        "identity": calculate_identity_score,
+        "device": calculate_device_score,
+        "network": calculate_network_score,
+        "application": calculate_app_score
+    },
+    "weights": {
+        "identity": trust_factors.identity.weight,
+        "device": trust_factors.device.weight,
+        "network": trust_factors.network.weight,
+        "application": trust_factors.application.weight
+    },
+    "risk_assessment": risk_level,
+    "recommended_actions": recommended_actions
+}

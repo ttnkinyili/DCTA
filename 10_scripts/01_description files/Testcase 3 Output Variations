@@ -1,0 +1,235 @@
+Testcase 3 
+
+
+
+
+
+CAse Variations
+
+ Case 1: Admin with High Trust (Full Access)
+	Input:
+			{
+			  "user": {
+			    "id": "user123",
+			    "category": "admin",
+			    "trust_score": 0.9
+			  },
+			  "device": {
+			    "id": "deviceA",
+			    "trust_score": 0.7
+			  },
+			  "application": {
+			    "name": "finance-dashboard",
+			    "risk_score": 0.2
+			  }
+			}
+	Output:
+	
+			{
+			  "access": "full",
+			  "aggregate_trust": 0.78,
+			  "details": {
+			    "user_contribution": 0.36,
+			    "device_contribution": 0.28,
+			    "app_contribution": 0.16,
+			    "calculation": "0.9*0.4 + 0.7*0.4 + (1-0.2)*0.2 = 0.78"
+			  },
+			  "reason": "Admin user with aggregate trust score 0.78 ≥ 0.75 threshold"
+			}
+
+
+Case 2: Admin with Low Trust (Limited Access)
+
+	Input:
+
+			{
+			  "user": {
+			    "id": "user456",
+			    "category": "admin",
+			    "trust_score": 0.6
+			  },
+			  "device": {
+			    "id": "deviceB",
+			    "trust_score": 0.5
+			  },
+			  "application": {
+			    "name": "sensitive-app",
+			    "risk_score": 0.5
+			  }
+			}
+
+	Output:
+
+			{
+			  "access": "limited",
+			  "aggregate_trust": 0.58,
+			  "details": {
+			    "user_contribution": 0.24,
+			    "device_contribution": 0.20,
+			    "app_contribution": 0.10,
+			    "calculation": "0.6*0.4 + 0.5*0.4 + (1-0.5)*0.2 = 0.58"
+			  },
+			  "reason": "Admin user with aggregate trust score 0.58 < 0.75 (limited access threshold: 0.45)"
+			}
+
+
+
+Case 3: Regular User with High Trust (Limited Access)
+	Input:
+
+			{
+			  "user": {
+			    "id": "user789",
+			    "category": "regular",
+			    "trust_score": 0.85
+			  },
+			  "device": {
+			    "id": "deviceC",
+			    "trust_score": 0.8
+			  },
+			  "application": {
+			    "name": "marketing-portal",
+			    "risk_score": 0.1
+			  }
+			}
+	Output:
+
+			{
+			  "access": "limited",
+			  "aggregate_trust": 0.82,
+			  "details": {
+			    "user_contribution": 0.34,
+			    "device_contribution": 0.32,
+			    "app_contribution": 0.18,
+			    "calculation": "0.85*0.4 + 0.8*0.4 + (1-0.1)*0.2 = 0.82"
+			  },
+			  "reason": "Regular user with aggregate trust score 0.82 ≥ 0.45 (limited access threshold)"
+			}
+ Case 4: Blacklisted User (Always Denied)
+	Input:
+
+				{
+				  "user": {
+				    "id": "user999",
+				    "category": "blacklisted",
+				    "trust_score": 0.0
+				  },
+				  "device": {
+				    "id": "deviceX",
+				    "trust_score": 1.0
+				  },
+				  "application": {
+				    "name": "public-app",
+				    "risk_score": 0.0
+				  }
+				}
+	Output:
+
+				{
+				  "access": "none",
+				  "aggregate_trust": 0.8,
+				  "details": {
+				    "user_contribution": 0.0,
+				    "device_contribution": 0.4,
+				    "app_contribution": 0.2,
+				    "calculation": "0.0*0.4 + 1.0*0.4 + (1-0.0)*0.2 = 0.8",
+				    "override": "Blacklisted user category overrides trust calculation"
+				  },
+				  "reason": "User is blacklisted - immediate denial regardless of trust score"
+				}
+Case 5: Low Aggregate Trust (No Access)
+	Input:
+
+				{
+				  "user": {
+				    "id": "user001",
+				    "category": "guest",
+				    "trust_score": 0.3
+				  },
+				  "device": {
+				    "id": "deviceY",
+				    "trust_score": 0.4
+				  },
+				  "application": {
+				    "name": "high-risk-app",
+				    "risk_score": 0.8
+				  }
+				}
+	Output:
+
+				{
+				  "access": "none",
+				  "aggregate_trust": 0.36,
+				  "details": {
+				    "user_contribution": 0.12,
+				    "device_contribution": 0.16,
+				    "app_contribution": 0.04,
+				    "calculation": "0.3*0.4 + 0.4*0.4 + (1-0.8)*0.2 = 0.36",
+				    "threshold_miss": "Below minimum trust threshold of 0.45"
+				  },
+				  "reason": "Aggregate trust score 0.36 < 0.45 (minimum threshold for limited access)"
+				}
+Case 6: High-Risk Application (No Access)
+	Input:
+
+				{
+				  "user": {
+				    "id": "user777",
+				    "category": "regular",
+				    "trust_score": 0.9
+				  },
+				  "device": {
+				    "id": "deviceZ",
+				    "trust_score": 0.9
+				  },
+				  "application": {
+				    "name": "critical-system",
+				    "risk_score": 0.9
+				  }
+				}
+	Output:
+
+				{
+				  "access": "none",
+				  "aggregate_trust": 0.42,
+				  "details": {
+				    "user_contribution": 0.36,
+				    "device_contribution": 0.36,
+				    "app_contribution": 0.02,
+				    "calculation": "0.9*0.4 + 0.9*0.4 + (1-0.9)*0.2 = 0.42",
+				    "application_impact": "High-risk application (risk_score=0.9) significantly reduces trust score"
+				  },
+				  "reason": "Aggregate trust score 0.42 < 0.45 (minimum threshold for limited access)"
+				}
+Case 7: Borderline Case (Limited Access)
+	Input:
+
+				{
+				  "user": {
+				    "id": "user555",
+				    "category": "regular",
+				    "trust_score": 0.6
+				  },
+				  "device": {
+				    "id": "deviceM",
+				    "trust_score": 0.5
+				  },
+				  "application": {
+				    "name": "standard-app",
+				    "risk_score": 0.3
+				  }
+				}
+	Output:
+
+				{
+				  "access": "limited",
+				  "aggregate_trust": 0.56,
+				  "details": {
+				    "user_contribution": 0.24,
+				    "device_contribution": 0.20,
+				    "app_contribution": 0.14,
+				    "calculation": "0.6*0.4 + 0.5*0.4 + (1-0.3)*0.2 = 0.56",
+				    "threshold_status": "Above limited access threshold by 0.11"
+				  },
+				  "reason": "Aggregate trust score 0.56 ≥ 0.45 (limited access threshold)"
+				}

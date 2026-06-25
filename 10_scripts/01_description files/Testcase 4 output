@@ -1,0 +1,32 @@
+Testcase 4 output:
+
+{
+    "user": "admin",
+    "application": "allowed",
+    "network": "remote",
+    "device": "trusted"
+}
+
+
+
+
+{
+  "decision": {
+    "details": {
+      "application": "allowed",
+      "device": "trusted",
+      "network": "remote",
+      "user": "admin"
+    },
+    "final_decision": "Granted",
+    "granted": true,
+    "reasons": ["Admin user with full privileges"],
+    "rejected": false,
+    "user_level": 3
+  }
+}
+
+
+
+
+

@@ -1,0 +1,57 @@
+Network Trust Modeling Based on Zero Trust Architecture for Heterogenous Networks using Software Defined Perimeters- A Literature Survey
+Paper Structure
+
+Abstract
+Chapter 1:
+	Background
+	Sections
+Emerging Approaches to security
+	Basic security  and enterprise network security
+	Evolving Enterprise Network Landscape
+	Misuse Propagation on Heterogenous networks
+Trust and trust Issues
+	=
+Trust and trust Management
+		Network trust
+
+		ALgorithms/Approaches to Trust Management
+			Trust Factor Calculation Based on Forwarding rate and Consistency Factor
+			Trust Factor Calculation Based on Direct and Indirect Values
+			Weight-based Probabilistic Trust Evaluation scheme
+		Trust Modelling Tools
+			Use case Misuse case scenarios
+			Network Graph Embedding and Attack Graphs
+			Multi-parameter Weighting
+
+
+		Trust Estimation in other Related Areas
+			Zero trust Using Network Micro-Segmentation
+			Multilevel Security Framework for NFV Based on Software Defined Perimeter
+			Research on Trust Management Model of Wireless Sensor Networks
+
+
+
+
+
+Zero trust and Network Security--
+		no implied trust
+		The Zero trust Architecture
+		Zero trust Enforcement Recommendations By NIST
+		Zero Trust Facets
+		Zero Trust as an Amalgamation of Services
+		Designing of Adaptive Zero Trust Estimation  **
+
+SDPS
+
+Adaptive Trust Estimation Model **
+			
+
+
+	
+
+	Conclusions and Recommendations
+
+	**Show the need for paper 2 on adapative 
+
+
+	IJCDS

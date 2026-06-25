@@ -1,0 +1,172 @@
+## START
+
+1. Host System Preparation: Goal: Stable Linux base with SDN support.
+
+	Requirements
+
+	Ubuntu Server 24.04 LTS
+
+	16 GB (recommended)
+
+	4 CPU cores
+
+	Nested virtualization enabled (if using GNS3 VM later)
+
+				sudo apt update && sudo apt upgrade -y
+				sudo apt install -y curl git net-tools bridge-utils
+
+2. Install Docker & Docker Compose: Containers minimize resource usage and improve repeatability.
+
+				sudo apt install -y docker.io docker-compose
+				sudo systemctl enable docker
+				sudo usermod -aG docker $USER
+				newgrp docker
+
+
+	Verify:
+
+				docker run hello-world
+
+3. Install Open vSwitch (PEP – Network Layer): Core microsegmentation and flow enforcement.
+
+				sudo apt install -y openvswitch-switch
+				sudo systemctl start openvswitch-switch
+				ovs-vsctl show
+
+4. Install Mininet (Network Emulation): Lightweight, deterministic topology control.
+
+				sudo apt install -y mininet
+				sudo mn --test pingall
+
+5. Deploy OpenDaylight (Policy Administrator):  Centralized SDN control translating trust decisions to flows.
+
+				docker run -d \
+				 --name opendaylight \
+				 -p 8181:8181 -p 6653:6653 \
+				 opendaylight/odl:latest
+
+
+	Access:
+
+		Controller UI: http://localhost:8181
+
+		Default credentials: admin/admin
+
+6. Deploy Keycloak (Identity & Device Trust Anchor): Identity-based Zero Trust starts here.
+
+				docker run -d \
+				 --name keycloak \
+				 -p 8080:8080 \
+				 -e KEYCLOAK_ADMIN=admin \
+				 -e KEYCLOAK_ADMIN_PASSWORD=admin \
+				 quay.io/keycloak/keycloak:latest start-dev
+
+
+	Configure:
+
+	Realm: SDP_ZeroTrust
+
+	Clients: ODL-Client-A, ODL-Client-B
+
+	Roles: trusted-device, untrusted-device, service-a, service-b
+
+7. Deploy Open Policy Agent (Policy Engine):  Declarative, auditable trust logic.
+
+				docker run -d \
+				 --name opa \
+				 -p 8182:8182 \
+				 openpolicyagent/opa run --server
+
+
+	Policies (example):	Identity claims, Device posture, Application sensitivity, Network context
+
+	generate a rego script that grants access (full, limited and no access) based on 3 separate parameters: users for user categories admin, guest and blacklisted; devices for categories trusted and untrusted devices; and applications for types allowed and blocked applications. Generate the resulting json script as well. these two will be used in an open policy agent container
+
+	rego script logic
+	| User        | Device    | App     | Result      |
+	| ----------- | --------- | ------- | ----------- |
+	| Admin       | Trusted   | Allowed | **Full**    |
+	| Admin       | Untrusted | Allowed | **Limited** |
+	| Guest       | Trusted   | Allowed | **Limited** |
+	| Guest       | Untrusted | Allowed | **None**    |
+	| Any         | Any       | Blocked | **None**    |
+	| Blacklisted | Any       | Any     | **None**    |
+
+
+8. Deploy Envoy Proxy (Application PEP): Why: L7 Zero Trust enforcement.
+
+				docker run -d \
+				 --name envoy \
+				 -p 10000:10000 \
+				 envoyproxy/envoy:v1.30-latest
+
+
+		Envoy integrates:
+
+		OAuth2 (Keycloak)
+
+		Policy checks (OPA)
+
+9. Build the Mininet Zero Trust Topology: Minimal Topology
+
+		Client
+
+		Service-A
+
+		Service-B
+
+	OVS switch (controlled by OpenDaylight)
+
+	sudo mn \
+	 --topo single,3 \
+	 --switch ovs \
+	 --controller remote,ip=127.0.0.1,port=6653
+
+10. 10. Baseline Validation:
+
+	 Before and After policies:
+
+
+			pingall
+
+			curl service-a
+
+			curl service-b
+
+
+	After policies:
+
+
+		Service-A → allowed
+
+		Service-B → denied
+
+This establishes basic Zero Trust enforcement.
+
+
+
+	Custom Multi Domain policy
+
+This establishes multidomain Zero Trust enforcement.
+
+
+
+	Numerical values for policies
+
+This establishes Static Multidomain Zero Trust enforcement
+
+
+
+	Custom Contextual trust Algorithm
+
+This establishes dynamic Multidomain Zero Trust enforcement
+
+
+
+	Custom COntextual Trust Algorithm with Temporal Decay
+
+This establishes Dynamic, Contextual and Temporal Multidomain Zero Trust enforcement
+
+
+
+##END
