@@ -324,3 +324,234 @@ Robbins, R. J., et al. (2025). Exponential time decay mechanisms for log anomaly
 Shafer, G. (1976). *A Mathematical Theory of Evidence*. Princeton University Press.
 
 Welford, B. P. (1962). Note on a method for calculating corrected sums of squares and products. *Technometrics*, 4(3), 419–420.
+
+---
+
+## Part 4: Tools for Measurement, Telemetry, and Benchmarking
+
+This section documents the tools and utilities used to measure, capture, and validate every metric, statistic, and comparison presented in Parts 1–3. Tools are grouped by the measurement category they serve.
+
+---
+
+### 4.1 Trust Evaluation Latency Measurement
+
+The latency breakdown in §2.2.2 (Table: Performance) and §2.2.3 (Decision Latency) requires per-component timing instrumentation.
+
+| Metric (from §2.2.2–§2.2.3) | Measured Value | Primary Tool | How It's Used |
+|:---|:---:|:---|:---|
+| Trust evaluation latency (TC3: 12.0 ms, TC4: 18.5 ms) | End-to-end pipeline | **`time.perf_counter_ns()`** (Python stdlib) | Wraps the entire trust computation function; measures wall-clock time from telemetry ingestion to trust score output |
+| Mathematical computation (TC3: 3.5 ms, TC4: 6.9 ms) | CPU-only math stages | **`time.perf_counter_ns()`** | Instruments each sub-stage: variance computation (2.1 ms), weight calculation, mass construction (0.4 ms), DS pairwise fusion (3.8 ms), Pignistic transformation (0.1 ms), temporal integration (0.2 ms) |
+| Redis state I/O (TC3: 5.2 ms, TC4: 8.4 ms) | State store latency | **`redis-benchmark`** | Benchmarks GET/SET throughput and latency percentiles (p50, p99); validates that Redis sustains required I/O under concurrent sessions |
+| OPA policy evaluation (3.2 ms, identical both models) | Policy engine latency | **`curl -w`** with timing format | Measures HTTP request timing to OPA REST API (`/v1/data/trust/policy`): DNS, connect, TTFB, total time |
+| OVS Flow-Mod install (0.5–3.5 ms) | Switch-level enforcement | **`ovs-ofctl dump-flows`** + **`tcpdump`** | `ovs-ofctl` captures flow rule timestamps and age; `tcpdump` on the OpenFlow control channel measures time between FLOW_MOD send and FLOW_MOD_ACK |
+| ODL RESTCONF API (1.5 ms) | Controller API latency | **`curl -w`** / **`httpie`** | Times REST requests to OpenDaylight's RESTCONF interface for flow rule push |
+| Total end-to-end (TC3: ~17 ms, TC4: ~23.5 ms) | Full pipeline | **`hping3`** | Measures end-to-end RTT from initial SYN to first data byte, capturing the combined trust computation + policy decision + enforcement delay |
+
+**Profiling tools for latency decomposition:**
+
+| Tool | Role |
+|:---|:---|
+| **`cProfile`** (Python built-in) | Function-level profiling of the trust engine; identifies which functions dominate the 6.9 ms mathematical core |
+| **`py-spy`** | Sampling profiler; generates flame graphs showing time distribution across variance computation, DS fusion, and temporal mixture |
+
+---
+
+### 4.2 Classification Accuracy and Security Metrics
+
+The security comparisons in §2.2.1 (Cost of Security) and §2.2.6 (Adaptability) require statistical validation across multiple simulation runs.
+
+| Metric (from §2.2.1) | Measured Value | Primary Tool | How It's Used |
+|:---|:---:|:---|:---|
+| False-positive rate (TC3: 28.4%, TC4: 7.5%) | Classification error | **SciPy `scipy.stats`** | Wilcoxon signed-rank test ($p < 0.01$) comparing FPR distributions across 50 independent runs; Cliff's delta ($\delta$) for effect size |
+| Classification accuracy (TC3: 71.8%, TC4: 94.2%) | Correct tier assignment | **NumPy** + **Pandas** | Computes per-scenario accuracy as fraction of time steps where `predicted_tier == ground_truth_tier`; aggregates mean ± std across runs |
+| Conflict coefficient $K$ (TC3: 0.18, TC4: 0.42) | DS evidential conflict | **Python DS engine** (`ds_utils.py`) | Computed inline during Dempster's combination rule; logged per evaluation step |
+| FPR reduction (73%) | Improvement delta | **Pandas** | `(FPR_TC3 - FPR_TC4) / FPR_TC3 × 100` computed over aggregated results |
+
+**Statistical methodology tools:**
+
+| Tool | Role in Validation |
+|:---|:---|
+| **SciPy `wilcoxon()`** | Non-parametric paired test for significance between TC3 and TC4 trust score distributions |
+| **Cliff's delta** (custom implementation or `cliffs_delta` package) | Effect size quantification: negligible (\|δ\| < 0.147), small (< 0.33), medium (< 0.474), large (≥ 0.474) |
+| **Matplotlib** | Generates trust trajectory plots with decision zone overlays (Full > 0.75, Limited ≥ 0.45, No Access < 0.45) for visual accuracy verification |
+
+---
+
+### 4.3 Convergence and Stability Measurement
+
+The convergence time comparison in §2.2.3 and the trust score stability analysis require per-step trust score tracking.
+
+| Metric | Measured Value | Primary Tool | How It's Used |
+|:---|:---:|:---|:---|
+| Convergence steps (TC3: 3, TC4: 4–8) | Steps to within ±0.02 of terminal score | **NumPy** | Iterates through trust score trajectory; identifies first step $t$ where $\|T(t) - T(29)\| \leq 0.02$ for all subsequent steps |
+| Ensemble stability ($\Delta T$) | Max trust variation at maturity ($t > 15$) | **NumPy** | `np.max(np.abs(np.diff(scores[15:])))` — maximum consecutive-step trust score change in the maturity phase |
+| Sliding window fill time | Steps until $N = 10$ observations accumulated | **Python logging** | Tracked in `dynamic_trust_weighting_time.py`; logged as the step when variance computation becomes fully informed |
+
+---
+
+### 4.4 SDN and Network-Layer Measurement
+
+The SDN flow-rule comparison in §2.2.3 requires precise timing of the OpenFlow control path.
+
+| Metric | Measured Value | Primary Tool | Secondary Tool |
+|:---|:---:|:---|:---|
+| Flow rule installation latency (2–5 ms) | OVS Flow-Mod processing | **`ovs-ofctl dump-flows s1`** | **`tcpdump -i lo port 6653`** (captures OpenFlow messages on controller channel) |
+| SDP-SDN synchronisation delay (4.2 ms median) | Trust-to-enforcement delay | **`tshark`** (protocol analysis) | Filters OpenFlow `FLOW_MOD` messages and correlates timestamps with trust engine log output |
+| Flow table scaling (200+ concurrent flows) | Table size under load | **`ovs-ofctl dump-flows s1 \| wc -l`** | `ovs-dpctl show` for datapath-level flow statistics |
+| Host-to-host RTT across topology segments | Emulated link characteristics | **`ping`** / **`fping`** | **`hping3 -S -p 80 -c 100`** for TCP-level RTT with microsecond precision |
+| Bandwidth (1 Gbps corporate, 10–100 Mbps remote) | Link throughput verification | **`iperf3`** | Run between Mininet hosts: `iperf3 -c <target> -t 30` for TCP throughput |
+| Packet loss (0–5% remote segment) | Configured vs. actual loss | **`ping -c 1000`** (loss stats) | **`tc -s qdisc show`** to verify netem impairment parameters |
+
+**Network impairment configuration:**
+
+| Tool | Role |
+|:---|:---|
+| **`tc` / `netem`** (Traffic Control) | Configures per-link latency (2 ms corporate, 5 ms DMZ, 20–200 ms remote), bandwidth limits, packet loss, and jitter on Mininet TCLink interfaces |
+| **Mininet TCLink API** | Programmatic link impairment via `self.addLink(h, s1, cls=TCLink, bw=100, delay='5ms', loss=2)` in topology scripts |
+
+---
+
+### 4.5 Resource Utilisation Measurement
+
+The performance metrics in §2.2.2 and the resource-constrained discussion in §3.1 require system-level monitoring.
+
+| Metric | Measured Value | Primary Tool | How It's Used |
+|:---|:---:|:---|:---|
+| CPU per evaluation (TC3: negligible, TC4: negligible) | Per-process CPU % | **`vmstat 1`** | Captures system-wide CPU (user/system/idle/wait) at 1-second intervals during scenario runs |
+| Memory per session (TC3: 16 bytes, TC4: 320 bytes) | Per-session RAM footprint | **Python `sys.getsizeof()`** | Measures actual memory of sliding window arrays, previous trust floats, and mass function objects |
+| Baseline RAM (3.2 GB idle testbed) | System-wide memory | **`free -h`** | Snapshot before any models run; captures total/used/free/available/swap |
+| Peak RAM (4.1 GB at 100 concurrent sessions) | System-wide under load | **`free -h`** + **`vmstat`** | Continuous monitoring during scalability tests |
+| Per-container resource usage | Container-level isolation | **`docker stats --no-stream`** | Reports CPU %, memory usage/limit, network I/O, and block I/O for each container (Keycloak, OPA, ODL, Redis, Envoy) |
+| Per-core CPU distribution | Multi-core utilisation | **`mpstat -P ALL 1`** | Identifies whether trust computation, OVS, or ODL saturate individual cores during load tests |
+| Disk I/O (Redis persistence, CSV output) | Storage throughput | **`iostat -x 1`** | Monitors read/write KB/s and I/O queue depth during result generation phases |
+| Redis operations/sec | State store throughput | **`redis-benchmark -n 10000 -c 50 -t get,set`** | Validates Redis can sustain the sliding window read/write rate across concurrent sessions |
+
+**Pre-model baseline protocol:**
+
+```bash
+# Capture resource utilisation BEFORE any trust models are active
+free -h > baseline_memory.log
+vmstat 1 60 > baseline_vmstat.log
+mpstat -P ALL 1 60 > baseline_mpstat.log
+docker stats --no-stream > baseline_docker_stats.log
+iostat -x 1 60 > baseline_iostat.log
+```
+
+---
+
+### 4.6 Energy Efficiency Measurement
+
+The energy comparison in §2.2.5 requires power measurement instrumentation.
+
+| Metric (from §2.2.5) | Measured Value | Primary Tool | How It's Used |
+|:---|:---:|:---|:---|
+| Total energy per evaluation (TC3: ~12 mJ, TC4: ~18.5 mJ) | Per-evaluation energy | **Software estimation**: CPU time × TDP/core | Estimated from measured computation latency × processor TDP; validated against system-level power draw |
+| Energy per correct decision (TC3: 16.7 mJ, TC4: 19.6 mJ) | Accuracy-normalised energy | **Derived metric** | `energy_per_eval / classification_accuracy`; computed from latency (§4.1) and accuracy (§4.2) measurements |
+| CPU cycles per evaluation | Instruction-level profiling | **`perf stat`** (Linux perf tools) | Counts CPU cycles, instructions, cache misses, and branch mispredictions for the trust computation function |
+| Redis I/O energy overhead | State store power | **`redis-benchmark`** + **`vmstat`** | Correlates Redis ops/sec with system power draw delta |
+
+**For the future IoT/edge experiments proposed in §3.2:**
+
+| Tool | Target Platform | Metric |
+|:---|:---|:---|
+| **Joulescope** (USB power analyser) | ESP32, STM32, Raspberry Pi | Real-time power consumption (µW precision) per trust evaluation cycle |
+| **INA219 current sensor** (I²C) | MCU-based edge devices | Per-evaluation current draw; integrated with MCU GPIO for synchronised measurement |
+| **`powerstat`** | Commodity laptop/server | System-wide power sampling with per-second granularity; compares idle vs. active ETM power |
+
+---
+
+### 4.7 Scalability Testing Tools
+
+The scalability discussion in §2.2.4 (complexity) and §3.2.2 (tiered hierarchy) requires parametric scaling benchmarks.
+
+| Metric | Primary Tool | How It's Used |
+|:---|:---|:---|
+| Linear overhead per additional session (0.2 ms) | **Mininet Python API** + **`time.perf_counter_ns()`** | Parametric test: increase host count from 6 → 10 → 20 → 50 → 100; measure per-evaluation latency at each scale |
+| OPA throughput under concurrent requests | **`wrk`** / **`ab`** (Apache Bench) | HTTP load generation: `wrk -t4 -c100 -d30s http://localhost:8181/v1/data/trust/policy` measures requests/sec and latency distribution |
+| OpenDaylight flow rule scalability (< 50 ms at 200+ flows) | **`ovs-ofctl dump-flows`** + **`curl -w`** | Counts flow table entries and measures ODL RESTCONF push latency at increasing flow counts |
+| Concurrent session CPU/memory scaling | **`vmstat`** + **`docker stats`** + **`htop`** | Continuous monitoring during 10 → 50 → 100 session scalability runs |
+| System stress boundaries | **`stress-ng`** | `stress-ng --cpu 4 --vm 2 --vm-bytes 4G --timeout 60s` simulates resource contention to validate graceful degradation |
+
+---
+
+### 4.8 Computational Complexity Validation
+
+The complexity analysis in §2.2.4 requires instruction-level validation that both models operate in $O(\text{linear})$ time.
+
+| Metric | Primary Tool | How It's Used |
+|:---|:---|:---|
+| Operations count (40 ops for variance over $N = 10$, $\|\mathcal{D}\| = 4$) | **`cProfile`** | Counts function calls per evaluation; confirms no hidden quadratic loops |
+| DS fusion closed-form verification | **`timeit`** (Python stdlib) | Micro-benchmarks the DS combination: `timeit.timeit(lambda: fuse(m1, m2), number=10000)` confirms sub-millisecond per pairwise combination |
+| Temporal integration overhead (two `exp()` calls) | **`perf stat`** | Counts floating-point operations for the exponential decay computation |
+| Sliding window state management ($O(N \cdot \|\mathcal{D}\|)$) | **Python `sys.getsizeof()`** + **`time.perf_counter_ns()`** | Measures both memory footprint and access time of the window data structure |
+
+---
+
+### 4.9 Future IoT / Edge Benchmarking Tools (§3.2)
+
+The experimental approaches proposed in Part 3 require specialised embedded-systems measurement tools.
+
+| Experiment (from §3.2) | Tool | Role |
+|:---|:---|:---|
+| §3.2.1 — Fixed-point ETM on ESP32 | **ESP-IDF profiler** + **Joulescope** | Measures computation latency and power consumption of Q16.16 fixed-point trust engine on ESP32 (240 MHz) |
+| §3.2.1 — Accuracy degradation | **NumPy** (comparison script) | Compares fixed-point vs. full-precision trust scores across all 6 scenarios; computes max absolute error and classification fidelity |
+| §3.2.2 — Tier 2 gateway (RPi Zero 2W) | **`htop`** + **`vmstat`** + **`powerstat`** | Measures max concurrent sessions, CPU saturation, and power draw on Raspberry Pi Zero 2W (1 GHz, 512 MB RAM, ~0.7 W idle) |
+| §3.2.3 — FRAM vs. SD card persistence | **Logic analyser** + **`time.perf_counter_ns()`** | Measures write latency for FRAM (sub-µs) vs. SD card (10–50 ms) state persistence |
+| §3.2.3 — Cold-start recovery penalty | **Python timing** + **Matplotlib** | Measures number of evaluation steps to recover pre-outage trust levels after state loss; plots recovery trajectories |
+| §3.2.4 — Event-driven vs. polling | **`time.perf_counter_ns()`** + **`vmstat`** | Compares total computation seconds and CPU utilisation between 1-minute polling and threshold-triggered evaluation |
+| §3.2.5 — Decision tree distillation | **scikit-learn** (`DecisionTreeClassifier`) | Trains shallow decision tree (depth ≤ 5) on ETM outputs; measures classification fidelity, model size (< 10 KB), and inference latency on Cortex-M4 |
+| §3.2.6 — Energy-harvesting scheduling | **Joulescope** + **solar irradiance logger** | Correlates available solar energy with trust evaluation frequency and classification accuracy degradation |
+
+---
+
+### 4.10 Telemetry Collection and Domain Score Sources
+
+The four-domain telemetry architecture underpinning all comparisons in this document relies on specific telemetry sources and measurement tools.
+
+| Domain | Telemetry Source | Collection Tool | Metric Produced |
+|:---|:---|:---|:---|
+| **Network** ($\mathcal{D}_N$) | OVS flow statistics, Mininet link metrics | **`ovs-ofctl dump-ports`**, **`ovs-ofctl dump-flows`** | Anomaly detection score, protocol compliance, node reputation |
+| **Network** ($\mathcal{D}_N$) | Packet-level analysis | **`tcpdump`** + **`tshark`** | Traffic patterns, protocol anomalies, connection metadata |
+| **Network** ($\mathcal{D}_N$) | Bandwidth/latency profiling | **`iperf3`**, **`ping`**, **`hping3`**, **`mtr`** | Throughput, RTT, jitter, packet loss |
+| **Device** ($\mathcal{D}_D$) | Endpoint posture attributes | **Keycloak** (device claims in JWT) | Identity/patch currency, EP status, configuration compliance |
+| **Data/Identity** ($\mathcal{D}_I$) | Authentication and encryption status | **Keycloak** (OIDC/SAML tokens), **Envoy** (TLS logs) | Data integrity, freshness/sensitivity, encryption compliance |
+| **Application** ($\mathcal{D}_A$) | Application-layer request patterns | **Envoy Proxy** (access logs, L7 metrics) | Vulnerability score, behavioural consistency, access pattern compliance |
+| **Variance** (all domains) | Sliding window of $N = 10$ observations | **Redis 7.x** (state store) + **Python** (NumPy) | Per-domain $\sigma^2$; drives dynamic weight $w_d = 1/(1 + \alpha \sigma^2)$ |
+| **Temporal** | Session timing, evaluation epoch | **Python `time`** module | Session age ($t$), inter-evaluation interval ($\Delta t$); drives $W_{\text{short}}(t)$ and $D_{\text{long}}(\Delta t)$ |
+
+**Future telemetry extensions (from `Reproducible_additional_lit.md`):**
+
+| Tool | Telemetry Role | Domain Mapping |
+|:---|:---|:---|
+| **Zeek** (passive network monitor) | Structured protocol metadata: conn, dns, ssl, http logs; behavioural baselines | Network ($\mathcal{D}_N$): anomaly score, protocol compliance; Data ($\mathcal{D}_I$): encryption compliance |
+| **Suricata** (IDS/IPS) | Real-time signature-based threat detection; EVE JSON alerts | Network ($\mathcal{D}_N$): anomaly score (inverse severity); Application ($\mathcal{D}_A$): behavioural consistency |
+| **Tetragon** (eBPF runtime security) | Process-level system call monitoring; file access, privilege escalation detection | Device ($\mathcal{D}_D$): runtime device posture |
+
+---
+
+### 4.11 Summary: Metric-to-Tool Mapping for This Document
+
+| Document Section | Metric / Comparison | Primary Measurement Tool(s) |
+|:---|:---|:---|
+| §2.2.1 — False-positive rate | FPR (28.4% vs. 7.5%) | SciPy (Wilcoxon), Cliff's delta, Pandas |
+| §2.2.1 — Classification accuracy | 71.8% vs. 94.2% | NumPy, Pandas, Matplotlib |
+| §2.2.1 — Conflict coefficient | $K = 0.18$ vs. $K = 0.42$ | Python DS engine (`ds_utils.py`) |
+| §2.2.2 — Trust evaluation latency | 12.0 ms vs. 18.5 ms | `time.perf_counter_ns()`, `cProfile` |
+| §2.2.2 — Mathematical computation | 3.5 ms vs. 6.9 ms | `time.perf_counter_ns()` (per-stage instrumentation) |
+| §2.2.2 — Redis state I/O | 5.2 ms vs. 8.4 ms | `redis-benchmark`, `time.perf_counter_ns()` |
+| §2.2.2 — OPA evaluation | 3.2 ms (identical) | `curl -w`, `wrk` |
+| §2.2.2 — Memory per session | 16 bytes vs. 320 bytes | `sys.getsizeof()` |
+| §2.2.3 — OVS Flow-Mod install | 0.5–3.5 ms | `ovs-ofctl`, `tcpdump` |
+| §2.2.3 — Total end-to-end | ~17 ms vs. ~23.5 ms | `hping3`, `time.perf_counter_ns()` |
+| §2.2.3 — Convergence steps | 3 vs. 4–8 steps | NumPy (trajectory analysis) |
+| §2.2.4 — Computational complexity | $O(\|\mathcal{D}\|)$ vs. $O(N \cdot \|\mathcal{D}\|)$ | `cProfile` (call counts), `timeit` |
+| §2.2.5 — Energy per evaluation | ~12 mJ vs. ~18.5 mJ | `perf stat`, software estimation, `powerstat` |
+| §2.2.5 — Energy per correct decision | 16.7 mJ vs. 19.6 mJ | Derived from latency + accuracy measurements |
+| §2.2.6 — Scenario-level adaptability | Access tier correctness per scenario | Python trust engine output + Matplotlib |
+| §3.1 — Baseline resource utilisation | 3.2 GB RAM, 10–15% CPU | `free`, `vmstat`, `docker stats`, `mpstat` |
+| §3.2.1 — ESP32 benchmarking | Latency, accuracy, power | ESP-IDF profiler, Joulescope, NumPy |
+| §3.2.2 — RPi Zero 2W gateway | Concurrent sessions, power | `htop`, `vmstat`, `powerstat` |
+| §3.2.3 — State persistence latency | FRAM vs. SD card write time | Logic analyser, `time.perf_counter_ns()` |
+| §3.2.4 — Event-driven evaluation | Computation reduction (80%) | `time.perf_counter_ns()`, `vmstat` |
+| §3.2.5 — Decision tree distillation | Fidelity ≥ 95%, size < 10 KB | scikit-learn, `sys.getsizeof()` |
+| §3.2.6 — Energy-harvesting | Mode-dependent accuracy | Joulescope, solar logger, NumPy |

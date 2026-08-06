@@ -135,7 +135,7 @@ $$\hat{W}_k = \frac{W_k}{\sum_{k \in \mathcal{D}} W_k}$$
 
 This normalisation ensures that if one domain's weight collapses due to high variance, the remaining stable domains proportionally absorb its influence — the total evidential budget is preserved at 100%. A single unstable sensor cannot corrupt the consensus; it merely *removes itself* from the evidential decision, leaving the stable domains to drive the outcome. This is fundamentally different from a zero-score in a cumulative model, which would actively pull the aggregate downward.
 
-**Justification of function form.** The inverse-variance function $W_k = (1 + \alpha\sigma_k^2)^{-1}$ was selected over two natural alternatives: the exponential decay form $W_k = e^{-\alpha\sigma_k^2}$ and the power-law form $W_k = \sigma_k^{-2\alpha}$. The power-law exhibits a singularity at $\sigma_k^2 = 0$ (requiring regularisation) and is unbounded, making it operationally unsuitable. The exponential form is well-behaved but offers no closed-form half-weight point and decays faster in the tail, prematurely discarding domains with moderate instability. The inverse-variance function uniquely provides: (i) exact boundedness in $(0, 1]$; (ii) a directly interpretable half-weight point at $\sigma^2 = 1/\alpha$; (iii) asymptotic convergence to the DS vacuous element ($W_k \to 0 \Rightarrow m(\Theta) \to 1$); and (iv) statistical pedigree from the inverse-variance weighting tradition in meta-analysis [20], [21].
+**Justification of function form.** The inverse-variance function was selected over the exponential form $W_k = e^{-\alpha\sigma_k^2}$ and the power-law form $W_k = \sigma_k^{-2\alpha}$ based on four criteria. The power-law is eliminated by its singularity at $\sigma_k^2 = 0$ and unbounded range. The exponential is well-behaved but decays superexponentially in the tail, prematurely discarding domains with moderate instability, and its half-weight point ($\sigma^2 = \ln 2/\alpha$) is less interpretable. The inverse-variance function uniquely provides: (i) exact boundedness in $(0, 1]$; (ii) a closed-form, directly interpretable half-weight point at $\sigma^2 = 1/\alpha$; (iii) asymptotic convergence to the DS vacuous element ($W_k \to 0 \Rightarrow m(\Theta) \to 1$); and (iv) statistical pedigree from the inverse-variance weighting tradition in meta-analysis [20], [21].
 
 ### C. Dempster-Shafer Belief Fusion
 
@@ -217,23 +217,21 @@ At session initiation ($t = 0$), $W_{\text{short}} \approx 1.0$ and the trust sc
 
 The inertia component provides **computational momentum**: legitimate users accumulate trust capital through sustained benign behaviour, insulating them from transient fluctuations. An attacker who hijacks a session mid-stream lacks the corresponding historical inertia and must simultaneously satisfy both the fresh evidence check *and* perfectly replicate the victim's long-term behavioural cadence — a computationally infeasible dual requirement [4].
 
-#### 3) Residual Trust (Alternative Formulation)
+*Remark (EMA equivalence).* The inertia mechanism is equivalently expressed as an exponential moving average $R_n = \beta R_{n-1} + (1 - \beta) S_n$, where $\beta \in (0, 1)$ governs memory depth. This formulation makes explicit the ensemble's role as a **low-pass filter** that attenuates high-frequency noise while preserving the underlying trust trend [27].
 
-The inertia mechanism can equivalently be expressed as an exponential moving average (EMA):
+#### 3) Three-Phase Trust Lifecycle
 
-$$R_n = \beta R_{n-1} + (1 - \beta) S_n$$
+The interaction between the dual horizons produces three distinct operational phases:
 
-where $R_n$ is the residual trust at evaluation epoch $n$, $S_n$ is the current spatial trust score, and $\beta \in (0, 1)$ is the smoothing constant governing memory depth. This makes explicit the EMA's role as a **low-pass filter** that attenuates high-frequency noise (transient drops or spikes) while preserving the signal's underlying trend — the statistical definition of behavioural inertia [27].
+**TABLE IIb.** Three-Phase Session Lifecycle
 
-#### 4) Three-Phase Trust Lifecycle
+| Phase | Time Window | $W_{\text{short}}$ | Trust Source | Behaviour |
+|:---|:---|:---:|:---|:---|
+| **Initialisation** | $0 - 5$ min | $1.0 \rightarrow 0.6$ | Authentication signal | Aggressive: single anomaly → immediate denial; high $m(\Theta)$ reflects limited evidence |
+| **Handover** | $5 - 15$ min | $0.6 \rightarrow 0.22$ | Mixed fresh + history | Calibrating: inertia absorbs transient noise ($\approx 0.60$ at step 10); differentiates noise from genuine events |
+| **Maturity** | $> 15$ min | $< 0.22$ | Behavioural history | Stable: trust $> 90\%$ determined by accumulated history; instant signal acts as a heartbeat |
 
-The interaction between the dual horizons produces three distinct operational phases, governed by the freshness weight $W_{\text{short}}$ decaying from 1.0 to 0.05 over the session:
-
-**Phase 1 — Initialisation** ($t \in [0, 5]$ min; $W_{\text{short}} \approx 1.0 \rightarrow 0.6$): The system is a "Nervous Skeptic." Trust is dominated by the authentication signal and initial device posture. The fusion engine operates with high vacuous mass, honestly acknowledging limited evidence. A single anomaly results in immediate denial because there is no buffer to absorb it. **Thesis: "Trust is Earned, Not Given."**
-
-**Phase 2 — Handover** ($t \in [5, 15]$ min; $W_{\text{short}} \approx 0.6 \rightarrow 0.22$): The system transitions from "Skeptic" to "Calibrator." Exponential discounting rapidly devalues the initial authentication signal. The system begins to mix current signals with establishing history — the equilibrium point where noise is differentiated from genuine events. If the network jitters at step 10, the inertia component ($\approx 0.60$) absorbs the impact. This phase prevents the "Yo-Yo Effect" of oscillating access decisions. **Thesis: "Trust is Calibrated."**
-
-**Phase 3 — Maturity** ($t > 15$ min; $W_{\text{short}} < 0.22$): Trust is $> 90\%$ determined by accumulated history. The instant signal acts merely as a heartbeat — a "Dead Man's Switch" that detects complete signal loss. Any anomalous deviation produces proportional trust degradation because the forgetting factor ensures recent observations dominate the decayed baseline. **Thesis: "Trust is Assumed (But Verified)."**
+The lifecycle embodies a progressive handoff: during Initialisation, the system operates as a sceptic that demands cryptographic proof and denies access upon any anomaly. Through the Handover phase, the decaying authentication signal is gradually replaced by accumulated behavioural evidence, resolving the "Yo-Yo Effect" of oscillating access decisions. At Maturity, inertia dominates — legitimate users are insulated from transient fluctuations, while anomalous deviations still produce proportional trust degradation through the forgetting factor.
 
 ### E. Overall Trust Score and Access Decisions
 
@@ -281,23 +279,15 @@ The ETM is architecturally decoupled from the enforcement substrate, operating a
 | State Storage | — | Redis (in-memory, port 6379) |
 | Monitoring | — | Prometheus + Grafana |
 
-### B. Policy Lifecycle
+### B. Policy Lifecycle and Testbed
 
-The ETM extends the standard SDP Join/Leave lifecycle with continuous re-evaluation:
+The ETM extends the standard SDP Join/Leave lifecycle with continuous re-evaluation through three phases:
 
-**Join Phase**: Upon SPA verification and mTLS establishment, the SDP Controller invokes the ETM with the entity's four-domain telemetry. The initial trust score is computed via spatial fusion only ($W_{\text{short}} = 1.0$). Access is provisionally granted at the tier determined by the initial $\Psi$, and the entity enters the Initialisation phase.
+1. **Join**: Upon SPA verification and mTLS establishment, the SDP Controller invokes the ETM with four-domain telemetry. The initial trust score is computed via spatial fusion only ($W_{\text{short}} = 1.0$), and access is provisionally granted at the tier determined by $\Psi$.
+2. **Continuous Monitoring**: At each evaluation epoch (default: 60 s), the SDP Controller streams updated telemetry to the ETM, which recomputes $\Psi$, updates sliding variance windows, and emits an updated access decision to the PEP via OPA. Tier changes are subject to hysteresis.
+3. **Leave**: Upon disconnection or sustained trust collapse below $\tau_{\text{deny}}$, behavioural baselines are retained in Redis with a 24-hour grace period; after expiration, state is purged and a full Join is required.
 
-**Continuous Monitoring Phase**: At each evaluation epoch (default: 60 seconds), the SDP Controller streams updated telemetry to the ETM. The engine recomputes $\Psi$ via the ensemble formula, updates the sliding variance windows, and emits an updated access decision to the PEP via OPA. If the access tier changes (subject to hysteresis), the PEP dynamically reconfigures the entity's micro-segment permissions.
-
-**Leave Phase**: Upon disconnection or sustained trust collapse below $\tau_{\text{deny}}$, the SDP Controller executes the Leave protocol. Behavioural baselines are retained in Redis with a 24-hour grace period for rapid re-establishment upon reconnection; after the grace period, state is purged and a full Join is required.
-
-### C. Implementation Details
-
-The testbed employs a hybrid containerised topology:
-
-- **Network Emulation**: Mininet with Open vSwitch (OVS), OpenDaylight SDN controller, topologies of 50–200 endpoints at 1 Gbps with 50 ms baseline latency.
-- **Container Orchestration**: Docker containers for microservices (ETM engine, OPA, Envoy, Keycloak, Redis) and LXC containers for endpoint simulation with distinct OS profiles (Linux Ubuntu 22.04, Windows 10, Android 12).
-- **Telemetry Pipeline**: Four-domain telemetry → Redis state store → ETM fusion engine → OPA policy evaluation → Envoy enforcement.
+The reference testbed employs a hybrid containerised topology: Mininet with Open vSwitch and OpenDaylight for SDN control (50–200 endpoints, 1 Gbps, 50 ms baseline latency); Docker containers for control-plane microservices (ETM engine, OPA, Envoy, Keycloak, Redis); and LXC containers for endpoint simulation across three OS profiles (Ubuntu 22.04, Windows 10, Android 12). The telemetry pipeline follows: four-domain telemetry → Redis state store → ETM fusion engine → OPA policy evaluation → Envoy enforcement.
 
 ## V. Experimental Evaluation
 
@@ -405,7 +395,7 @@ Notably, FPR monotonically decreases with increasing $\alpha$ (12.1% → 2.4%), 
 
 ## VI. Discussion
 
-### A. Comparison with Existing Models
+### A. Comparative Analysis and Architectural Insights
 
 **TABLE IX.** Comparative Analysis of Trust Computation Approaches
 
@@ -419,21 +409,13 @@ Notably, FPR monotonically decreases with increasing $\alpha$ (12.1% → 2.4%), 
 | No prior required | ✓ | ✗ | ✓ | ✓ | **✓** |
 | Cold-start handling | ✗ | ✗ | Partial | ✗ | **✓** |
 
-The ETM's progressive evaluation demonstrates that each component contributes measurably. Static and single-domain models fail because they cannot reconcile conflicting contextual signals. The Hierarchical model improves coverage but its fixed weights cannot adapt to environmental volatility. The Base DS model introduces adaptive weighting and uncertainty representation but plateaus without temporal dynamics — it is a *spatial-only* model that assumes temporal stationarity. Linear and Exponential Decay add the temporal dimension but impose a single decay profile that cannot simultaneously satisfy aggressive breach containment and legitimate session continuity.
+The progressive evaluation (Table VI) demonstrates that each ETM component contributes measurably and that their combination is non-trivially synergistic. Static and single-domain models fail because they cannot reconcile conflicting contextual signals. The Hierarchical model improves coverage but cannot adapt to environmental volatility. The Base DS model introduces adaptive weighting and uncertainty representation but plateaus without temporal dynamics — a *spatial-only* model assuming temporal stationarity. Linear and Exponential Decay add the temporal dimension but impose a single decay profile that cannot simultaneously satisfy aggressive breach containment and legitimate session continuity.
 
-The ETM uniquely resolves this tension through the Freshness-Inertia continuum. The model effectively creates a **low-pass filter** for trust decisions: high-frequency noise (brief drops or spikes) is filtered out, leaving only the true underlying trust trend.
+The ETM resolves this tension through the Freshness-Inertia continuum, effectively implementing a **low-pass filter** for trust decisions: high-frequency noise is filtered out, leaving only the true underlying trust trend. This design operates analogously to a physics-inspired inertia system — a massive object (high historical trust) requires significant force (strong adversarial evidence) to change its trajectory. The Remote VPN results empirically confirm this: transient VPN connection drops that caused the Base DS model to revoke Full Access within a single evaluation cycle were absorbed by the ETM's inertia component ($1 - W_{\text{short}} \approx 0.78$ at maturity), maintaining stable access in alignment with CARTA's mandate for continuous adaptive assessment [8].
 
-### B. Security-Usability Trade-Off
+The **Limited Access tier** — absent from all binary access control systems — operationalises DS theory's capacity to represent genuine uncertainty. In scenarios where evidence is partially conflicting (Compromised Host, $K = 0.42$) or environmentally degraded (Public Wi-Fi, $\sigma^2_N \approx 0.25$), the architecture routes sessions into proportional access tiers where entities continue operating under enhanced monitoring while the engine accumulates evidence to resolve the ambiguity. This contextual grey-area routing confines binary lockouts exclusively to sessions exhibiting mathematically verifiable maliciousness, reducing false-positive disruptions by 73% relative to fixed-weight baselines.
 
-The role of residual trust (inertia) and hysteresis is to prevent the *Jittery Access Problem* — the operational condition where minor, transient fluctuations in ambient telemetry cause repeated access revocations that degrade productivity [8].
-
-The ETM implements a physics-inspired solution: a massive object (high historical trust) requires significant force (strong adversarial evidence) to change its trajectory. In the Remote VPN scenario, transient VPN connection drops caused momentary network score collapse. Without inertia, the Base DS model revoked Full Access within a single evaluation cycle. The ETM's inertia component ($1 - W_{\text{short}} \approx 0.78$ at maturity) absorbed this transient noise, maintaining Full Access by relying on the accumulated behavioural baseline. This aligns with CARTA's mandate for continuous adaptive assessment: the system continuously evaluates risk but adapts its responsiveness to the entity's accumulated trust capital [8].
-
-### C. Contextual Grey-Area Routing
-
-The Limited Access tier represents a pivotal innovation. In the Public Wi-Fi scenario, the entity maintained stable Limited Access ($\Psi \approx 0.60$) throughout the session. The system correctly identified that while the user's Device and Identity signals were acceptable, the Network's instability ($\sigma^2_N \approx 0.25$) warranted caution. This is a direct operationalisation of DS theory's vacuous mass: the high $m(\Theta)$ for the Network domain translates into genuine uncertainty, which the threshold architecture maps to constrained — not denied — access. By routing uncertain sessions into proportional tiers, the architecture ensures productivity for legitimate users while confining binary lockouts exclusively to sessions exhibiting mathematically verifiable maliciousness.
-
-### D. Limitations and Threats to Validity
+### B. Limitations and Threats to Validity
 
 The following limitations constrain the generalisability of the reported results:
 
@@ -476,7 +458,7 @@ The integration with an SDP enforcement substrate via OPA and Envoy validates th
 
 ## References
 
-[1] M. Al-Tariq, M. S. Hossain, and M. Atiquzzaman, "Hybrid trust architectures for securing cyber-physical systems and enterprise networks," *IEEE Commun. Surveys Tuts.*, vol. 27, no. 1, pp. 54–82, 2025.
+[1] M. Al-Tariq, M. S. Hossain, and M. Atiquzzaman, "Hybrid trust architectures for securing cyber-physical systems and enterprise networks," *IEEE Commun. Surveys Tuts.*, vol. 27, no. 1, pp. 54–82, 2025. <!-- VERIFY: Publication date is 2025; confirm availability on IEEE Xplore -->
 
 [2] A. A. Ahmed, B. Al-Khateeb, and A. K. M. Al-Qurabat, "A comprehensive survey on zero trust architecture framework: Architecture, applications, and challenges," *J. Cybersecurity Inf. Management*, vol. 13, no. 1, pp. 1–22, 2024.
 
@@ -486,13 +468,13 @@ The integration with an SDP enforcement substrate via OPA and Envoy validates th
 
 [5] S. Rose, O. Borchert, S. Mitchell, and S. Connelly, "Zero trust architecture," NIST Special Publication 800-207, 2020. https://doi.org/10.6028/NIST.SP.800-207
 
-[6] S. Shin, H. Kim, and J. Park, "Temporal gaps in NIST zero trust trust algorithms: A critical analysis," *IEEE Security Privacy*, vol. 23, no. 1, pp. 34–43, 2025.
+[6] S. Shin, H. Kim, and J. Park, "Temporal gaps in NIST zero trust trust algorithms: A critical analysis," *IEEE Security Privacy*, vol. 23, no. 1, pp. 34–43, 2025. <!-- VERIFY: Publication date is 2025; confirm existence on IEEE Xplore; replace if unverifiable -->
 
 [7] Cloud Security Alliance, "SDP specification v2.0," CSA, 2024.
 
 [8] Gartner, "Market guide for Zero Trust Network Access (ZTNA)," Gartner Research, 2024.
 
-[9] X. Li, Z. Wang, and Y. Zhang, "Autonomous trust management modeling for online social users leveraging blockchain and Bayesian evaluation," *Comput. Security*, vol. 148, 104120, 2025.
+[9] X. Li, Z. Wang, and Y. Zhang, "Autonomous trust management modeling for online social users leveraging blockchain and Bayesian evaluation," *Comput. Security*, vol. 148, 104120, 2025. <!-- VERIFY: Publication date is 2025; confirm DOI on ScienceDirect -->
 
 [10] T. Ahmed, Y. Li, and W. Zhang, "Dynamic trust management for zero trust architectures in heterogeneous IoT environments," *IEEE Trans. Dependable Secure Comput.*, vol. 21, no. 3, pp. 1542–1557, 2024. https://doi.org/10.1109/TDSC.2023.3312456
 
@@ -506,9 +488,9 @@ The integration with an SDP enforcement substrate via OPA and Envoy validates th
 
 [15] Appgate, "SDP architecture guide: Operational independence and gateway clustering," Appgate, 2024.
 
-[16] J. Smith, A. Doe, and R. Johnson, "Modeling temporal trust dynamics in multi-domain zero trust networks," in *Proc. ACM Cloud Computing Security Workshop*, 2023, pp. 67–78.
+[16] A. Jøsang and R. Ismail, "The Beta reputation system," in *Proc. 15th Bled Electronic Commerce Conference*, 2002, pp. 324–337. <!-- REPLACED: Original entry "Smith, Doe, Johnson" was a synthetic placeholder. This canonical reference on trust decay and reputation modelling is verifiable. -->
 
-[17] R. J. Robbins *et al.*, "Exponential time decay mechanisms for log anomaly detection in cloud computing environments," in *Proc. IEEE Int. Conf. Cloud Security*, 2025, pp. 142–150.
+[17] R. J. Robbins *et al.*, "Exponential time decay mechanisms for log anomaly detection in cloud computing environments," in *Proc. IEEE Int. Conf. Cloud Security*, 2025, pp. 142–150. <!-- VERIFY: Publication date is 2025; confirm on IEEE Xplore; replace with Hunter (1986) [27] for exponential decay if unverifiable -->
 
 [18] G. Shafer, *A Mathematical Theory of Evidence*. Princeton, NJ: Princeton University Press, 1976.
 
@@ -534,6 +516,6 @@ The integration with an SDP enforcement substrate via OPA and Envoy validates th
 
 [29] L. Muñoz-González, B. Pfitzner, and E. C. Lupu, "Robust trust management under adversarial uncertainty in zero trust environments," *IEEE Trans. Inf. Forensics Security*, vol. 18, pp. 4521–4535, 2023. https://doi.org/10.1109/TIFS.2023.3289456
 
-[30] I. Alqassem *et al.*, "Zero-trust mobility-aware authentication framework for secure vehicular fog computing networks," *IEEE Internet Things J.*, vol. 12, no. 2, pp. 1450–1465, 2025.
+[30] I. Alqassem *et al.*, "Zero-trust mobility-aware authentication framework for secure vehicular fog computing networks," *IEEE Internet Things J.*, vol. 12, no. 2, pp. 1450–1465, 2025. <!-- VERIFY: Publication date is 2025; confirm DOI on IEEE Xplore -->
 
-[31] L. Chen and Q. Wang, "Explainable AI and transparency requirements in adaptive access control ecosystems," *IEEE Trans. Inf. Forensics Security*, vol. 20, pp. 112–125, 2025.
+[31] L. Chen and Q. Wang, "Explainable AI and transparency requirements in adaptive access control ecosystems," *IEEE Trans. Inf. Forensics Security*, vol. 20, pp. 112–125, 2025. <!-- VERIFY: Publication date is 2025; confirm DOI on IEEE Xplore -->
